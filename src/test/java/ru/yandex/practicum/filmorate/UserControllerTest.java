@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate;
 
-
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,10 +17,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class UserControllerTest {
     private UserController userController;
+    private Validator validator;
 
     @BeforeEach
     void setUp() {
         userController = new UserController();
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
     }
 
     @Test
@@ -50,10 +56,11 @@ class UserControllerTest {
     void shouldThrowExceptionWhenLoginContainsSpaces() {
         User user = new User();
         user.setEmail("email@example.com");
-        user.setLogin("login with spaces");
+        user.setLogin("login with spaces"); // Невалидный логин
         user.setBirthday(LocalDate.of(1997, 12, 1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        var violations = validator.validate(user);
+        assertFalse(violations.isEmpty(), "Пользователь должен быть невалидным из-за пробелов в логине");
     }
 
     @Test

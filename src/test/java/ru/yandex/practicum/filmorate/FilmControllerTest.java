@@ -1,5 +1,8 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,10 +15,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class FilmControllerTest {
     private FilmController filmController;
+    private Validator validator;
 
     @BeforeEach
     void setUp() {
         filmController = new FilmController();
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
     }
 
     @Test
@@ -37,10 +44,11 @@ class FilmControllerTest {
         Film film = new Film();
         film.setName("Film Name");
         film.setDescription("Description");
-        film.setReleaseDate(LocalDate.of(1895, 12, 27));
+        film.setReleaseDate(LocalDate.of(1895, 12, 27)); // Невалидная дата
         film.setDuration(120);
 
-        assertThrows(ValidationException.class, () -> filmController.addFilm(film));
+        var violations = validator.validate(film);
+        assertFalse(violations.isEmpty(), "Фильм должен быть невалидным из-за даты релиза");
     }
 
     @Test
