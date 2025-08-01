@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.validator;
 
-import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ru.yandex.practicum.filmorate.customannotation.ReleaseDate;
