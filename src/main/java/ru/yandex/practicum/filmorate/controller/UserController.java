@@ -26,7 +26,6 @@ public class UserController {
 
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
-        validateUser(user);
         user.setId(idCounter++);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
@@ -41,18 +40,11 @@ public class UserController {
         if (!users.containsKey(user.getId())) {
             throw new ValidationException("Пользователь не найден");
         }
-        validateUser(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
         users.put(user.getId(), user);
         log.info("Обновлен пользователь: {}", user);
         return user;
-    }
-
-    private void validateUser(User user) {
-        if (user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не должен содержать пробелы");
-        }
     }
 }

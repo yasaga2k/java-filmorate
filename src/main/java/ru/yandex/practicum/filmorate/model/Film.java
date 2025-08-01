@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import ru.yandex.practicum.filmorate.customannotation.ReleaseDate;
 
 import java.time.LocalDate;
 
@@ -19,6 +20,7 @@ public class Film {
     private String description;
 
     @NotNull(message = "Дата релиза не должна быть null")
+    @ReleaseDate
     private LocalDate releaseDate;
 
     @NotNull(message = "продолжительность фильма должна быть указана")
