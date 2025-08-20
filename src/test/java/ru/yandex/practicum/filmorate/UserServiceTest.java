@@ -25,7 +25,7 @@ class UserServiceTest {
     }
 
     @Test
-    void createUser_ShouldReturnUserWithId() {
+    void createUserShouldReturnUserWithId() {
         User createdUser = userService.create(testUser);
 
         assertNotNull(createdUser.getId());
@@ -34,7 +34,7 @@ class UserServiceTest {
     }
 
     @Test
-    void createUser_WithName_ShouldUseProvidedName() {
+    void createUserWithNameShouldUseProvidedName() {
         testUser.setName("Test Name");
         User createdUser = userService.create(testUser);
 
@@ -42,7 +42,7 @@ class UserServiceTest {
     }
 
     @Test
-    void findAll_ShouldReturnCreatedUsers() {
+    void findAllShouldReturnCreatedUsers() {
         userService.create(testUser);
         List<User> users = userService.findAll();
 
@@ -51,7 +51,7 @@ class UserServiceTest {
     }
 
     @Test
-    void findById_WithExistingId_ShouldReturnUser() {
+    void findByIdWithExistingIdShouldReturnUser() {
         User createdUser = userService.create(testUser);
         User foundUser = userService.findById(createdUser.getId());
 
@@ -60,12 +60,12 @@ class UserServiceTest {
     }
 
     @Test
-    void findById_WithNonExistingId_ShouldThrowException() {
+    void findByIdWithNonExistingIdShouldThrowException() {
         assertThrows(NotFoundException.class, () -> userService.findById(999));
     }
 
     @Test
-    void addFriend_ShouldAddFriendsToBothUsers() {
+    void addFriendShouldAddFriendsToBothUsers() {
         User user1 = userService.create(testUser);
 
         User user2 = new User();
@@ -84,7 +84,7 @@ class UserServiceTest {
     }
 
     @Test
-    void removeFriend_ShouldRemoveFriendsFromBothUsers() {
+    void removeFriendShouldRemoveFriendsFromBothUsers() {
         User user1 = userService.create(testUser);
 
         User user2 = new User();
@@ -104,7 +104,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getFriends_ShouldReturnUserFriends() {
+    void getFriendsShouldReturnUserFriends() {
         User user1 = userService.create(testUser);
 
         User user2 = new User();
@@ -121,7 +121,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getCommonFriends_ShouldReturnCommonFriends() {
+    void getCommonFriendsShouldReturnCommonFriends() {
         User user1 = userService.create(testUser);
 
         User user2 = new User();

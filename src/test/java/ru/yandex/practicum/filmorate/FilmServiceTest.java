@@ -26,7 +26,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void createFilm_ShouldReturnFilmWithId() {
+    void createFilmShouldReturnFilmWithId() {
         Film createdFilm = filmService.create(testFilm);
 
         assertNotNull(createdFilm.getId());
@@ -34,7 +34,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void findAll_ShouldReturnCreatedFilms() {
+    void findAllShouldReturnCreatedFilms() {
         filmService.create(testFilm);
         List<Film> films = filmService.findAll();
 
@@ -43,7 +43,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void findById_WithExistingId_ShouldReturnFilm() {
+    void findByIdWithExistingIdShouldReturnFilm() {
         Film createdFilm = filmService.create(testFilm);
         Film foundFilm = filmService.findById(createdFilm.getId());
 
@@ -52,12 +52,12 @@ class FilmServiceTest {
     }
 
     @Test
-    void findById_WithNonExistingId_ShouldThrowException() {
+    void findByIdWithNonExistingIdShouldThrowException() {
         assertThrows(NotFoundException.class, () -> filmService.findById(999));
     }
 
     @Test
-    void updateFilm_ShouldUpdateFilmData() {
+    void updateFilmShouldUpdateFilmData() {
         Film createdFilm = filmService.create(testFilm);
 
         Film updatedFilm = new Film();
@@ -75,7 +75,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void addLike_ShouldAddLikeToFilm() {
+    void addLikeShouldAddLikeToFilm() {
         Film createdFilm = filmService.create(testFilm);
         filmService.addLike(createdFilm.getId(), 1);
 
@@ -85,7 +85,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void removeLike_ShouldRemoveLikeFromFilm() {
+    void removeLikeShouldRemoveLikeFromFilm() {
         Film createdFilm = filmService.create(testFilm);
         filmService.addLike(createdFilm.getId(), 1);
         filmService.removeLike(createdFilm.getId(), 1);
@@ -96,7 +96,7 @@ class FilmServiceTest {
     }
 
     @Test
-    void getPopularFilms_ShouldReturnFilmsSortedByLikes() {
+    void getPopularFilmsShouldReturnFilmsSortedByLikes() {
         Film film1 = filmService.create(testFilm);
 
         Film film2 = new Film();
