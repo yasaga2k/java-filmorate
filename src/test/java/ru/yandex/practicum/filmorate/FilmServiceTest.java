@@ -116,4 +116,9 @@ class FilmServiceTest {
         assertEquals(film2.getId(), popularFilms.get(0).getId()); // Самый популярный первый
         assertEquals(2, popularFilms.get(0).getLikes().size());
     }
+
+    @Test
+    void addLike_ToNonExistingFilm_ShouldThrowNotFoundException() {
+        assertThrows(NotFoundException.class, () -> filmService.addLike(999, 1));
+    }
 }

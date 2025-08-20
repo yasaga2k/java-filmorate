@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "ru.yandex.practicum.filmorate.controller")
 @Slf4j
 public class GlobalExceptionHandler {
 
@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFoundException(NotFoundException e) {
+        log.warn("Объект не найден: {}", e.getMessage());
         return new ErrorResponse("Not Found", e.getMessage());
     }
 
