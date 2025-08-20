@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
+    private final UserService userService;
 
     public List<Film> findAll() {
         return filmStorage.findAll();
@@ -43,6 +44,7 @@ public class FilmService {
 
     public void addLike(int filmId, int userId) {
         Film film = findById(filmId);
+        userService.findById(userId);
         film.getLikes().add(userId);
         log.info("Лайк добавлен. Фильм ID={}, лайков: {}", filmId, film.getLikes().size());
     }
