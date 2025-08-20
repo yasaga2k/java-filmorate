@@ -1,98 +1,148 @@
 package ru.yandex.practicum.filmorate;
 
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import ru.yandex.practicum.filmorate.controller.UserController;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import java.time.LocalDate;
-
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class UserControllerTest {
-    private UserController userController;
-    private Validator validator;
+class UserServiceTest {
+    private UserService userService;
+    private User testUser;
 
     @BeforeEach
     void setUp() {
-        userController = new UserController();
+        userService = new UserService(new InMemoryUserStorage());
 
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+        testUser = new User();
+        testUser.setEmail("test@mail.com");
+        testUser.setLogin("testlogin");
+        testUser.setBirthday(LocalDate.of(1990, 1, 1));
     }
 
     @Test
-    void shouldCreateUser() {
-        User user = new User();
-        user.setEmail("email@example.com");
-        user.setLogin("login");
-        user.setBirthday(LocalDate.of(1991, 11, 21));
+    void createUser_ShouldReturnUserWithId() {
+        User createdUser = userService.create(testUser);
 
-        User createdUser = userController.createUser(user);
-
-        assertEquals(1, createdUser.getId());
-        assertEquals(1, userController.findAll().size());
+        assertNotNull(createdUser.getId());
+        assertEquals("testlogin", createdUser.getLogin());
+        assertEquals("testlogin", createdUser.getName()); // Должен использовать login как name
     }
 
     @Test
-    void shouldUseLoginAsNameWhenNameIsBlank() {
-        User user = new User();
-        user.setEmail("email@example.com");
-        user.setLogin("login");
-        user.setBirthday(LocalDate.of(1990, 12, 28));
+    void createUser_WithName_ShouldUseProvidedName() {
+        testUser.setName("Test Name");
+        User createdUser = userService.create(testUser);
 
-        User createdUser = userController.createUser(user);
-
-        assertEquals("login", createdUser.getName());
+        assertEquals("Test Name", createdUser.getName());
     }
 
     @Test
-    void shouldThrowExceptionWhenLoginContainsSpaces() {
-        User user = new User();
-        user.setEmail("email@example.com");
-        user.setLogin("login with spaces"); // Невалидный логин
-        user.setBirthday(LocalDate.of(1997, 12, 1));
+    void findAll_ShouldReturnCreatedUsers() {
+        userService.create(testUser);
+        List<User> users = userService.findAll();
 
-        var violations = validator.validate(user);
-        assertFalse(violations.isEmpty(), "Пользователь должен быть невалидным из-за пробелов в логине");
+        assertEquals(1, users.size());
+        assertEquals("testlogin", users.get(0).getLogin());
     }
 
     @Test
-    void shouldUpdateUser() {
-        User user = new User();
-        user.setEmail("email@example.com");
-        user.setLogin("login");
-        user.setBirthday(LocalDate.of(1990, 1, 28));
-        userController.createUser(user);
+    void findById_WithExistingId_ShouldReturnUser() {
+        User createdUser = userService.create(testUser);
+        User foundUser = userService.findById(createdUser.getId());
 
-        User updatedUser = new User();
-        updatedUser.setId(1);
-        updatedUser.setEmail("updated@example.com");
-        updatedUser.setLogin("updatedLogin");
-        updatedUser.setName("Updated Name");
-        user.setBirthday(LocalDate.of(1996, 4, 4));
-
-        User result = userController.updateUser(updatedUser);
-
-        assertEquals("updated@example.com", result.getEmail());
-        assertEquals("updatedLogin", result.getLogin());
-        assertEquals("Updated Name", result.getName());
+        assertEquals(createdUser.getId(), foundUser.getId());
+        assertEquals("testlogin", foundUser.getLogin());
     }
 
     @Test
-    void shouldThrowExceptionWhenUpdateNonExistentUser() {
-        User user = new User();
-        user.setId(999);
-        user.setEmail("email@example.com");
-        user.setLogin("login");
-        user.setBirthday(LocalDate.of(1999, 7, 28));
+    void findById_WithNonExistingId_ShouldThrowException() {
+        assertThrows(NotFoundException.class, () -> userService.findById(999));
+    }
 
-        assertThrows(ValidationException.class, () -> userController.updateUser(user));
+    @Test
+    void addFriend_ShouldAddFriendsToBothUsers() {
+        User user1 = userService.create(testUser);
+
+        User user2 = new User();
+        user2.setEmail("friend@mail.com");
+        user2.setLogin("friend");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
+        User createdUser2 = userService.create(user2);
+
+        userService.addFriend(user1.getId(), createdUser2.getId());
+
+        User updatedUser1 = userService.findById(user1.getId());
+        User updatedUser2 = userService.findById(createdUser2.getId());
+
+        assertTrue(updatedUser1.getFriends().contains(createdUser2.getId()));
+        assertTrue(updatedUser2.getFriends().contains(user1.getId()));
+    }
+
+    @Test
+    void removeFriend_ShouldRemoveFriendsFromBothUsers() {
+        User user1 = userService.create(testUser);
+
+        User user2 = new User();
+        user2.setEmail("friend@mail.com");
+        user2.setLogin("friend");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
+        User createdUser2 = userService.create(user2);
+
+        userService.addFriend(user1.getId(), createdUser2.getId());
+        userService.removeFriend(user1.getId(), createdUser2.getId());
+
+        User updatedUser1 = userService.findById(user1.getId());
+        User updatedUser2 = userService.findById(createdUser2.getId());
+
+        assertFalse(updatedUser1.getFriends().contains(createdUser2.getId()));
+        assertFalse(updatedUser2.getFriends().contains(user1.getId()));
+    }
+
+    @Test
+    void getFriends_ShouldReturnUserFriends() {
+        User user1 = userService.create(testUser);
+
+        User user2 = new User();
+        user2.setEmail("friend@mail.com");
+        user2.setLogin("friend");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
+        User createdUser2 = userService.create(user2);
+
+        userService.addFriend(user1.getId(), createdUser2.getId());
+        List<User> friends = userService.getFriends(user1.getId());
+
+        assertEquals(1, friends.size());
+        assertEquals("friend", friends.get(0).getLogin());
+    }
+
+    @Test
+    void getCommonFriends_ShouldReturnCommonFriends() {
+        User user1 = userService.create(testUser);
+
+        User user2 = new User();
+        user2.setEmail("user2@mail.com");
+        user2.setLogin("user2");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
+        User createdUser2 = userService.create(user2);
+
+        User commonFriend = new User();
+        commonFriend.setEmail("common@mail.com");
+        commonFriend.setLogin("common");
+        commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
+        User createdCommonFriend = userService.create(commonFriend);
+
+        // Добавляем общего друга обоим пользователям
+        userService.addFriend(user1.getId(), createdCommonFriend.getId());
+        userService.addFriend(createdUser2.getId(), createdCommonFriend.getId());
+
+        List<User> commonFriends = userService.getCommonFriends(user1.getId(), createdUser2.getId());
+
+        assertEquals(1, commonFriends.size());
+        assertEquals("common", commonFriends.get(0).getLogin());
     }
 }
