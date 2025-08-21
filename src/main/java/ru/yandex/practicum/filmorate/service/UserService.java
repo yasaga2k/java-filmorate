@@ -24,7 +24,7 @@ public class UserService {
     public User findById(int id) {
         return userStorage.findById(id)
                 .orElseThrow(() -> {
-                    log.warn("Пользователь с id={} не найден", id);
+                    log.error("Пользователь с id={} не найден", id);
                     return new NotFoundException("Пользователь с id=" + id + " не найден");
                 });
     }
@@ -74,13 +74,12 @@ public class UserService {
         User user = findById(userId);
         User otherUser = findById(otherId);
 
-        Set<Integer> commonFriendsIds = user.getFriends().stream()
+        // Исправлено: оптимизирован стрим
+        List<User> commonFriends = user.getFriends().stream()
                 .filter(otherUser.getFriends()::contains)
-                .collect(Collectors.toSet());
-
-        List<User> commonFriends = commonFriendsIds.stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
+
         log.info("Найдено {} общих друзей между {} и {}", commonFriends.size(), userId, otherId);
         return commonFriends;
     }

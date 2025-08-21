@@ -14,9 +14,9 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ValidationException.class)
+    @ExceptionHandler({ValidationException.class, ConstraintViolationException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidationException(ValidationException e) {
+    public ErrorResponse handleValidationException(Exception e) {
         return new ErrorResponse("Ошибка валидации", e.getMessage());
     }
 
@@ -31,12 +31,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception e) {
         return new ErrorResponse("Internal Server Error", "Произошла непредвиденная ошибка");
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleConstraintViolationException(ConstraintViolationException e) {
-        return new ErrorResponse("Ошибка валидации параметров", e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
