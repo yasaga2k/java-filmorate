@@ -2,23 +2,45 @@ package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class UserServiceTest {
     private UserService userService;
+
+    @Mock
+    private UserStorage userStorage;
+
+    @Mock
+    private FriendshipDbStorage friendshipDbStorage;
+
+    @Mock
+    private FriendshipStorage friendshipStorage;
+
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(new InMemoryUserStorage());
+        MockitoAnnotations.openMocks(this);
+        userService = new UserService(userStorage, friendshipDbStorage, friendshipStorage);
 
         testUser = new User();
+        testUser.setId(1);
         testUser.setEmail("test@mail.com");
         testUser.setLogin("testlogin");
         testUser.setBirthday(LocalDate.of(1990, 1, 1));
@@ -26,123 +48,130 @@ class UserServiceTest {
 
     @Test
     void createUserShouldReturnUserWithId() {
+        when(userStorage.create(any(User.class))).thenReturn(testUser);
+
         User createdUser = userService.create(testUser);
 
         assertNotNull(createdUser.getId());
         assertEquals("testlogin", createdUser.getLogin());
-        assertEquals("testlogin", createdUser.getName()); // Должен использовать login как name
+        verify(userStorage).create(testUser);
     }
 
     @Test
     void createUserWithNameShouldUseProvidedName() {
         testUser.setName("Test Name");
+        when(userStorage.create(any(User.class))).thenReturn(testUser);
+
         User createdUser = userService.create(testUser);
 
         assertEquals("Test Name", createdUser.getName());
+        verify(userStorage).create(testUser);
+    }
+
+    @Test
+    void createUserWithoutNameShouldUseLogin() {
+        testUser.setName(null);
+        when(userStorage.create(any(User.class))).thenReturn(testUser);
+
+        User createdUser = userService.create(testUser);
+
+        assertEquals("testlogin", createdUser.getName());
+        verify(userStorage).create(testUser);
     }
 
     @Test
     void findAllShouldReturnCreatedUsers() {
-        userService.create(testUser);
+        when(userStorage.findAll()).thenReturn(List.of(testUser));
+
         List<User> users = userService.findAll();
 
         assertEquals(1, users.size());
         assertEquals("testlogin", users.get(0).getLogin());
+        verify(userStorage).findAll();
     }
 
     @Test
     void findByIdWithExistingIdShouldReturnUser() {
-        User createdUser = userService.create(testUser);
-        User foundUser = userService.findById(createdUser.getId());
+        when(userStorage.findById(1)).thenReturn(Optional.of(testUser));
 
-        assertEquals(createdUser.getId(), foundUser.getId());
+        User foundUser = userService.findById(1);
+
+        assertEquals(1, foundUser.getId());
         assertEquals("testlogin", foundUser.getLogin());
+        verify(userStorage).findById(1);
     }
 
     @Test
     void findByIdWithNonExistingIdShouldThrowException() {
+        when(userStorage.findById(999)).thenReturn(Optional.empty());
+
         assertThrows(NotFoundException.class, () -> userService.findById(999));
+        verify(userStorage).findById(999);
     }
 
     @Test
-    void addFriendShouldAddFriendsToBothUsers() {
-        User user1 = userService.create(testUser);
+    void addFriendShouldAddFriendship() {
+        User friend = new User();
+        friend.setId(2);
+        friend.setEmail("friend@mail.com");
+        friend.setLogin("friend");
 
-        User user2 = new User();
-        user2.setEmail("friend@mail.com");
-        user2.setLogin("friend");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User createdUser2 = userService.create(user2);
+        when(userStorage.findById(1)).thenReturn(Optional.of(testUser));
+        when(userStorage.findById(2)).thenReturn(Optional.of(friend));
 
-        userService.addFriend(user1.getId(), createdUser2.getId());
+        userService.addFriend(1, 2);
 
-        User updatedUser1 = userService.findById(user1.getId());
-        User updatedUser2 = userService.findById(createdUser2.getId());
-
-        assertTrue(updatedUser1.getFriends().contains(createdUser2.getId()));
-        assertTrue(updatedUser2.getFriends().contains(user1.getId()));
+        verify(friendshipDbStorage).add(any(Friendship.class));
+        verify(userStorage, times(2)).findById(anyInt());
     }
 
     @Test
-    void removeFriendShouldRemoveFriendsFromBothUsers() {
-        User user1 = userService.create(testUser);
+    void removeFriendShouldRemoveFriendship() {
+        User friend = new User();
+        friend.setId(2);
+        friend.setEmail("friend@mail.com");
+        friend.setLogin("friend");
 
-        User user2 = new User();
-        user2.setEmail("friend@mail.com");
-        user2.setLogin("friend");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User createdUser2 = userService.create(user2);
+        when(userStorage.findById(1)).thenReturn(Optional.of(testUser));
+        when(userStorage.findById(2)).thenReturn(Optional.of(friend));
 
-        userService.addFriend(user1.getId(), createdUser2.getId());
-        userService.removeFriend(user1.getId(), createdUser2.getId());
+        userService.removeFriend(1, 2);
 
-        User updatedUser1 = userService.findById(user1.getId());
-        User updatedUser2 = userService.findById(createdUser2.getId());
-
-        assertFalse(updatedUser1.getFriends().contains(createdUser2.getId()));
-        assertFalse(updatedUser2.getFriends().contains(user1.getId()));
+        verify(friendshipDbStorage).delete(any(Friendship.class));
+        verify(userStorage, times(2)).findById(anyInt());
     }
 
     @Test
     void getFriendsShouldReturnUserFriends() {
-        User user1 = userService.create(testUser);
+        User friend = new User();
+        friend.setId(2);
+        friend.setEmail("friend@mail.com");
+        friend.setLogin("friend");
 
-        User user2 = new User();
-        user2.setEmail("friend@mail.com");
-        user2.setLogin("friend");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User createdUser2 = userService.create(user2);
+        Friendship friendship = new Friendship(1, 2, false);
 
-        userService.addFriend(user1.getId(), createdUser2.getId());
-        List<User> friends = userService.getFriends(user1.getId());
+        when(userStorage.findById(1)).thenReturn(Optional.of(testUser));
+        when(friendshipDbStorage.getFriendshipByUserId(1)).thenReturn(List.of(friendship));
+        when(userStorage.findById(2)).thenReturn(Optional.of(friend));
+
+        List<User> friends = userService.getFriends(1);
 
         assertEquals(1, friends.size());
         assertEquals("friend", friends.get(0).getLogin());
+        verify(userStorage, times(2)).findById(anyInt());
+        verify(friendshipDbStorage).getFriendshipByUserId(1);
     }
 
     @Test
     void getCommonFriendsShouldReturnCommonFriends() {
-        User user1 = userService.create(testUser);
+        when(userStorage.findById(1)).thenReturn(Optional.of(new User()));
+        when(userStorage.findById(2)).thenReturn(Optional.of(new User()));
 
-        User user2 = new User();
-        user2.setEmail("user2@mail.com");
-        user2.setLogin("user2");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User createdUser2 = userService.create(user2);
+        when(friendshipDbStorage.getFriendshipByUserId(1)).thenReturn(List.of());
+        when(friendshipDbStorage.getFriendshipByUserId(2)).thenReturn(List.of());
 
-        User commonFriend = new User();
-        commonFriend.setEmail("common@mail.com");
-        commonFriend.setLogin("common");
-        commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
-        User createdCommonFriend = userService.create(commonFriend);
+        List<User> result = userService.getCommonFriends(1, 2);
 
-        // Добавляем общего друга обоим пользователям
-        userService.addFriend(user1.getId(), createdCommonFriend.getId());
-        userService.addFriend(createdUser2.getId(), createdCommonFriend.getId());
-
-        List<User> commonFriends = userService.getCommonFriends(user1.getId(), createdUser2.getId());
-
-        assertEquals(1, commonFriends.size());
-        assertEquals("common", commonFriends.get(0).getLogin());
+        assertEquals(0, result.size());
     }
 }

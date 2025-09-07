@@ -2,10 +2,15 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.Friendship;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,7 +18,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
+
+    @Qualifier("userDbStorage")
     private final UserStorage userStorage;
+    private final FriendshipDbStorage friendshipDbStorage;
+    private final FriendshipStorage friendshipStorage;
 
     public List<User> findAll() {
         log.info("GET /users - Получение всех пользователей");
@@ -29,6 +38,9 @@ public class UserService {
     }
 
     public User create(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         User createdUser = userStorage.create(user);
         log.info("Пользователь создан: ID={}, Login={}", createdUser.getId(), createdUser.getLogin());
         return createdUser;
@@ -36,6 +48,9 @@ public class UserService {
 
     public User update(User user) {
         findById(user.getId()); // Валидация существования
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         User updatedUser = userStorage.update(user);
         log.info("Пользователь обновлен: ID={}", user.getId());
         return updatedUser;
@@ -45,41 +60,33 @@ public class UserService {
         User user = findById(userId);
         User friend = findById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-        log.info("Пользователи {} и {} теперь друзья. Друзей у {}: {}, у {}: {}",
-                userId, friendId, userId, user.getFriends().size(), friendId, friend.getFriends().size());
+        // Односторонняя дружба - только пользователь добавляет друга
+        friendshipDbStorage.add(new Friendship(userId, friendId, true));
+        log.info("Пользователь {} добавил пользователя {} в друзья", userId, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
-        User user = findById(userId);
-        User friend = findById(friendId);
+        findById(userId);
+        findById(friendId);
 
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-        log.info("Пользователи {} и {} больше не друзья", userId, friendId);
+        friendshipDbStorage.delete(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
+        log.info("Пользователь {} удалил пользователя {} из друзей", userId, friendId);
     }
 
     public List<User> getFriends(int userId) {
-        User user = findById(userId);
-        List<User> friends = user.getFriends().stream()
-                .map(this::findById)
+        findById(userId); // Проверяем существование пользователя
+
+        return friendshipDbStorage.getFriendshipByUserId(userId).stream()
+                .map(friendship -> findById(friendship.friendId()))
                 .collect(Collectors.toList());
-        log.info("Найдено {} друзей пользователя {}", friends.size(), userId);
-        return friends;
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        User user = findById(userId);
-        User otherUser = findById(otherId);
+        findById(userId);
+        findById(otherId);
 
-        // Исправлено: оптимизирован стрим
-        List<User> commonFriends = user.getFriends().stream()
-                .filter(otherUser.getFriends()::contains)
+        return friendshipDbStorage.findCommonFriends(userId, otherId).stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
-
-        log.info("Найдено {} общих друзей между {} и {}", commonFriends.size(), userId, otherId);
-        return commonFriends;
     }
 }
