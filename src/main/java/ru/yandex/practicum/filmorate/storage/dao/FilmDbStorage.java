@@ -28,14 +28,14 @@ public class FilmDbStorage implements FilmStorage {
     private static final String FIND_BY_ID_SQL = "SELECT f.*, m.name as mpa_name FROM films f " +
             "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id WHERE f.id = ?";
     private static final String FIND_POPULAR_FILMS_SQL = """
-            SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count 
+            SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count\s
             FROM films f
             LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
             LEFT JOIN films_likes l ON f.id = l.film_id
             GROUP BY f.id
             ORDER BY likes_count DESC
             LIMIT ?
-            """;
+           \s""";
     private static final String CREATE_SQL = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
             "VALUES (?, ?, ?, ?, ?)";
     private static final String UPDATE_SQL = "UPDATE films SET name = ?, description = ?, " +
@@ -44,19 +44,19 @@ public class FilmDbStorage implements FilmStorage {
     private static final String DELETE_GENRES_SQL = "DELETE FROM film_genres WHERE film_id = ?";
     private static final String INSERT_GENRES_SQL = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
     private static final String LOAD_GENRES_FOR_FILM_SQL = """
-            SELECT DISTINCT g.id, g.name 
-            FROM genres g 
-            JOIN film_genres fg ON g.id = fg.genre_id 
-            WHERE fg.film_id = ? 
+            SELECT DISTINCT g.id, g.name\s
+            FROM genres g\s
+            JOIN film_genres fg ON g.id = fg.genre_id\s
+            WHERE fg.film_id = ?\s
             ORDER BY g.id ASC""";
 
     private static final String LOAD_GENRES_FOR_FILMS_SQL = """
-            SELECT DISTINCT fg.film_id, g.id, g.name 
-            FROM film_genres fg 
-            JOIN genres g ON fg.genre_id = g.id 
-            WHERE fg.film_id IN (%s) 
+            SELECT DISTINCT fg.film_id, g.id, g.name\s
+            FROM film_genres fg\s
+            JOIN genres g ON fg.genre_id = g.id\s
+            WHERE fg.film_id IN (%s)\s
             ORDER BY g.id ASC
-            """;
+           \s""";
     private static final String LOAD_LIKES_FOR_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
     private static final String LOAD_LIKES_FOR_FILMS_SQL = "SELECT film_id, user_id FROM films_likes " +
             "WHERE film_id IN (";
