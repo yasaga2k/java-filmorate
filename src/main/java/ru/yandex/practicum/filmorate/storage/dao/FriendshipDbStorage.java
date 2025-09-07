@@ -21,11 +21,11 @@ public class FriendshipDbStorage implements FriendshipStorage {
     private static final String DELETE_SQL = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
     private static final String GET_FRIENDSHIP_BY_USER_SQL = "SELECT * FROM friendships WHERE user_id = ?";
     private static final String FIND_COMMON_FRIENDS_IDS_SQL = """
-            SELECT f1.friend_id 
+            SELECT f1.friend_id\s
             FROM friendships f1
             JOIN friendships f2 ON f1.friend_id = f2.friend_id
             WHERE f1.user_id = ? AND f2.user_id = ?
-            """;
+           \s""";
 
     @Override
     public void add(Friendship friendship) {
