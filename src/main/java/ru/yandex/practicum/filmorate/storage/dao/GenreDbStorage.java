@@ -15,15 +15,17 @@ import java.util.Optional;
 public class GenreDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
+    private static final String FIND_ALL_GENRES_SQL = "SELECT * FROM genres ORDER BY id";
+
+    private static final String FIND_BY_ID_GENRES_SQL = "SELECT * FROM genres WHERE id = ?";
+
     public List<Genre> findAll() {
-        String sql = "SELECT * FROM genres ORDER BY id";
-        return jdbcTemplate.query(sql, this::mapRowToGenre);
+        return jdbcTemplate.query(FIND_ALL_GENRES_SQL, this::mapRowToGenre);
     }
 
     public Optional<Genre> findById(int id) {
-        String sql = "SELECT * FROM genres WHERE id = ?";
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, this::mapRowToGenre, id));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(FIND_BY_ID_GENRES_SQL, this::mapRowToGenre, id));
         } catch (Exception e) {
             return Optional.empty();
         }

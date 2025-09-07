@@ -14,13 +14,8 @@ public class FriendshipService {
     }
 
     public void addFriend(int userId, int friendId) {
-        Friendship friendship = new Friendship(userId, friendId, false);
-        friendshipStorage.add(friendship);
-    }
-
-    public void acceptFriendship(int userId, int friendId) {
         Friendship friendship = new Friendship(userId, friendId, true);
-        friendshipStorage.update(friendship);
+        friendshipStorage.add(friendship);
     }
 
     public void deleteFriend(int userId, int friendId) {

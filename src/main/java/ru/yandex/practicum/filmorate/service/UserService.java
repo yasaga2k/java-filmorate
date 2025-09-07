@@ -6,11 +6,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.Friendship;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +22,7 @@ public class UserService {
     @Qualifier("userDbStorage")
     private final UserStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
+    private final FriendshipStorage friendshipStorage;
 
     public List<User> findAll() {
         log.info("GET /users - Получение всех пользователей");
@@ -59,7 +61,7 @@ public class UserService {
         User friend = findById(friendId);
 
         // Односторонняя дружба - только пользователь добавляет друга
-        friendshipDbStorage.add(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
+        friendshipDbStorage.add(new Friendship(userId, friendId, true));
         log.info("Пользователь {} добавил пользователя {} в друзья", userId, friendId);
     }
 
@@ -80,20 +82,10 @@ public class UserService {
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        User user = findById(userId);
-        User otherUser = findById(otherId);
+        findById(userId);
+        findById(otherId);
 
-        Set<Integer> userFriends = friendshipDbStorage.getFriendshipByUserId(userId).stream()
-                .map(friendship -> friendship.friendId())
-                .collect(Collectors.toSet());
-
-        Set<Integer> otherFriends = friendshipDbStorage.getFriendshipByUserId(otherId).stream()
-                .map(friendship -> friendship.friendId())
-                .collect(Collectors.toSet());
-
-        // Находим общих друзей
-        return userFriends.stream()
-                .filter(otherFriends::contains)
+        return friendshipDbStorage.findCommonFriends(userId, otherId).stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
     }

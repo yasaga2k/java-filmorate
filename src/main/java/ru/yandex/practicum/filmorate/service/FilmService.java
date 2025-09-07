@@ -12,11 +12,9 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -51,10 +49,8 @@ public class FilmService {
         film.setMpa(mpa);
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            Set<Genre> sortedGenres = film.getGenres().stream()
-                    .sorted(Comparator.comparingInt(Genre::id))
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            film.setGenres(sortedGenres);
+            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
+            film.setGenres(uniqueGenres);
         }
 
         return filmStorage.create(film);
@@ -73,10 +69,8 @@ public class FilmService {
                 genreService.findById(genre.id());
             }
 
-            Set<Genre> sortedGenres = film.getGenres().stream()
-                    .sorted(Comparator.comparingInt(Genre::id))
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            film.setGenres(sortedGenres);
+            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
+            film.setGenres(uniqueGenres);
         }
 
         Film updatedFilm = filmStorage.update(film);
@@ -98,9 +92,6 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.findAll().stream()
-                .sorted(Comparator.comparingInt(f -> -f.getLikes().size()))
-                .limit(count)
-                .collect(Collectors.toList());
+        return filmStorage.findPopularFilms(count);
     }
 }

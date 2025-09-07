@@ -160,13 +160,13 @@ class FilmServiceTest {
 
         testFilm.getLikes().add(1);
 
-        when(filmStorage.findAll()).thenReturn(List.of(testFilm, film2));
+        when(filmStorage.findPopularFilms(2)).thenReturn(List.of(film2, testFilm));
 
         List<Film> popularFilms = filmService.getPopularFilms(2);
 
         assertEquals(2, popularFilms.size());
         assertEquals(2, popularFilms.getFirst().getId()); // Самый популярный первый
         assertEquals(2, popularFilms.getFirst().getLikes().size());
-        verify(filmStorage).findAll();
+        verify(filmStorage).findPopularFilms(2); // Проверяем вызов нового метода
     }
 }

@@ -12,4 +12,6 @@ public interface FriendshipStorage {
     void delete(Friendship friendship);
 
     List<Friendship> getFriendshipByUserId(int userId);
+
+    List<Integer> findCommonFriends(int userId1, int userId2);
 }

@@ -19,17 +19,21 @@ import java.util.Optional;
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
 
+    private static final String FIND_ALL_SQL = "SELECT * FROM users";
+    private static final String FIND_BY_ID_SQL = "SELECT * FROM users WHERE id = ?";
+    private static final String CREATE_SQL = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+    private static final String UPDATE_SQL = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
+    private static final String DELETE_SQL = "DELETE FROM users WHERE id = ?";
+
     @Override
     public List<User> findAll() {
-        String sql = "SELECT * FROM users";
-        return jdbcTemplate.query(sql, this::mapRowToUser);
+        return jdbcTemplate.query(FIND_ALL_SQL, this::mapRowToUser);
     }
 
     @Override
     public Optional<User> findById(int id) {
-        String sql = "SELECT * FROM users WHERE id = ?";
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, this::mapRowToUser, id));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(FIND_BY_ID_SQL, this::mapRowToUser, id));
         } catch (Exception e) {
             return Optional.empty();
         }
@@ -37,11 +41,10 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User create(User user) {
-        String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
-            PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement stmt = connection.prepareStatement(CREATE_SQL, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, user.getEmail());
             stmt.setString(2, user.getLogin());
             stmt.setString(3, user.getName());
@@ -55,8 +58,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-        jdbcTemplate.update(sql,
+        jdbcTemplate.update(UPDATE_SQL,
                 user.getEmail(),
                 user.getLogin(),
                 user.getName(),
@@ -67,8 +69,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void delete(int id) {
-        String sql = "DELETE FROM users WHERE id = ?";
-        jdbcTemplate.update(sql, id);
+        jdbcTemplate.update(DELETE_SQL, id);
     }
 
     private User mapRowToUser(ResultSet rs, int rowNum) throws SQLException {

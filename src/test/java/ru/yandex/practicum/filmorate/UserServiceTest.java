@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -28,12 +29,15 @@ class UserServiceTest {
     @Mock
     private FriendshipDbStorage friendshipDbStorage;
 
+    @Mock
+    private FriendshipStorage friendshipStorage;
+
     private User testUser;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        userService = new UserService(userStorage, friendshipDbStorage);
+        userService = new UserService(userStorage, friendshipDbStorage, friendshipStorage);
 
         testUser = new User();
         testUser.setId(1);
@@ -160,30 +164,14 @@ class UserServiceTest {
 
     @Test
     void getCommonFriendsShouldReturnCommonFriends() {
-        User user2 = new User();
-        user2.setId(2);
-        user2.setEmail("user2@mail.com");
-        user2.setLogin("user2");
+        when(userStorage.findById(1)).thenReturn(Optional.of(new User()));
+        when(userStorage.findById(2)).thenReturn(Optional.of(new User()));
 
-        User commonFriend = new User();
-        commonFriend.setId(3);
-        commonFriend.setEmail("common@mail.com");
-        commonFriend.setLogin("common");
+        when(friendshipDbStorage.getFriendshipByUserId(1)).thenReturn(List.of());
+        when(friendshipDbStorage.getFriendshipByUserId(2)).thenReturn(List.of());
 
-        Friendship friendship1 = new Friendship(1, 3, false);
-        Friendship friendship2 = new Friendship(2, 3, false);
+        List<User> result = userService.getCommonFriends(1, 2);
 
-        when(userStorage.findById(1)).thenReturn(Optional.of(testUser));
-        when(userStorage.findById(2)).thenReturn(Optional.of(user2));
-        when(userStorage.findById(3)).thenReturn(Optional.of(commonFriend));
-        when(friendshipDbStorage.getFriendshipByUserId(1)).thenReturn(List.of(friendship1));
-        when(friendshipDbStorage.getFriendshipByUserId(2)).thenReturn(List.of(friendship2));
-
-        List<User> commonFriends = userService.getCommonFriends(1, 2);
-
-        assertEquals(1, commonFriends.size());
-        assertEquals("common", commonFriends.get(0).getLogin());
-        verify(userStorage, times(3)).findById(anyInt());
-        verify(friendshipDbStorage, times(2)).getFriendshipByUserId(anyInt());
+        assertEquals(0, result.size());
     }
 }

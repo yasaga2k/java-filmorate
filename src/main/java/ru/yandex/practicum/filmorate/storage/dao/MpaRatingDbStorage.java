@@ -15,15 +15,17 @@ import java.util.Optional;
 public class MpaRatingDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
+    private static final String FIND_ALL__SQL = "SELECT * FROM mpa_ratings ORDER BY id";
+
+    private static final String FIND_BY_ID_SQL = "SELECT * FROM mpa_ratings WHERE id = ?";
+
     public List<MpaRating> findAll() {
-        String sql = "SELECT * FROM mpa_ratings ORDER BY id";
-        return jdbcTemplate.query(sql, this::mapRowToMpaRating);
+        return jdbcTemplate.query(FIND_ALL__SQL, this::mapRowToMpaRating);
     }
 
     public Optional<MpaRating> findById(int id) {
-        String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, this::mapRowToMpaRating, id));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(FIND_BY_ID_SQL, this::mapRowToMpaRating, id));
         } catch (Exception e) {
             return Optional.empty();
         }
