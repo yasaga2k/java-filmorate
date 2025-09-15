@@ -30,6 +30,14 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getAllFilmsFromDirector(int directorId) {
+        return films.values().stream()
+                .filter(f -> f.getDirectors().stream()
+                        .anyMatch(d -> d.getId() == directorId))
+                .toList();
+    }
+
+    @Override
     public Film create(Film film) {
         film.setId(idCounter++);
         films.put(film.getId(), film);

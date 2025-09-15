@@ -6,12 +6,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +29,7 @@ public class FilmService {
     private final FilmsLikesDbStorage filmsLikesDbStorage;
     private final MpaService mpaService;
     private final GenreService genreService;
+    private final DirectorService directorService;
 
     public List<Film> findAll() {
         return filmStorage.findAll();
@@ -73,6 +76,15 @@ public class FilmService {
             film.setGenres(uniqueGenres);
         }
 
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            for (Director director : film.getDirectors()) {
+                directorService.findById(director.getId());
+            }
+
+            Set<Director> directors = new LinkedHashSet<>(film.getDirectors());
+            film.setDirectors(directors);
+        }
+
         Film updatedFilm = filmStorage.update(film);
         return updatedFilm;
     }
@@ -93,5 +105,19 @@ public class FilmService {
 
     public List<Film> getPopularFilms(int count) {
         return filmStorage.findPopularFilms(count);
+    }
+
+    public List<Film> getFilmsByDirector(int id, String sortBy) {
+        directorService.findById(id);
+        if (sortBy.equals("year")) {
+            List<Film> films = filmStorage.getAllFilmsFromDirector(id);
+            return films.stream().sorted(Comparator.comparing(Film::getReleaseDate)).toList();
+        } else if (sortBy.equals("likes")) {
+            List<Film> films = filmStorage.getAllFilmsFromDirector(id);
+            return films.stream().sorted(Comparator.comparingInt((Film f) -> -f.getLikes().size())).toList();
+        }
+
+        throw new IllegalArgumentException("неправильный параметр sortBy " + sortBy);
+
     }
 }
