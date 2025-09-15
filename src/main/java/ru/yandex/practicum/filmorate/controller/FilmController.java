@@ -70,4 +70,9 @@ public class FilmController {
         Film film = filmService.findById(id);
         return film.getGenres();
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteById(@PathVariable int id) {
+        filmService.deleteById(id);
+    }
 }

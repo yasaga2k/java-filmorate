@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
-import ru.yandex.practicum.filmorate.model.Friendship;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,5 +88,9 @@ public class UserService {
         return friendshipDbStorage.findCommonFriends(userId, otherId).stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
+    }
+
+    public void deleteById(int id) {
+        userStorage.delete(id);
     }
 }
