@@ -8,10 +8,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.service.GenreService;
-import ru.yandex.practicum.filmorate.service.MpaService;
-import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.service.*;
 import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
@@ -41,13 +38,16 @@ class FilmServiceTest {
     @Mock
     private GenreService genreService;
 
+    @Mock
+    private DirectorService directorService;
+
     private Film testFilm;
     private User testUser;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        filmService = new FilmService(filmStorage, userService, filmsLikesDbStorage, mpaService, genreService);
+        filmService = new FilmService(filmStorage, userService, filmsLikesDbStorage, mpaService, genreService, directorService);
 
         testFilm = new Film();
         testFilm.setId(1);
