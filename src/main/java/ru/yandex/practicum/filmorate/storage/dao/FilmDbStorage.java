@@ -118,7 +118,6 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(FIND_ALL_SQL, this::mapRowToFilm);
         loadGenresForFilms(films);
         loadLikesForFilms(films);
-        loadDirectorsForFilms(films);
         return films;
     }
 
@@ -165,7 +164,6 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, params);
         loadGenresForFilms(films);
         loadLikesForFilms(films);
-        loadDirectorsForFilms(films);
         return films;
     }
 
@@ -305,28 +303,6 @@ public class FilmDbStorage implements FilmStorage {
             for (Film film : films) {
                 if (film.getId() == filmId) {
                     film.getGenres().add(genre);
-                    break;
-                }
-            }
-        });
-    }
-
-    private void loadDirectorsForFilms(List<Film> films) {
-        if (films.isEmpty()) return;
-
-        String filmIds = films.stream()
-                .map(f -> String.valueOf(f.getId()))
-                .collect(Collectors.joining(","));
-
-        String sql = String.format(LOAD_DIRECTORS_FOR_FILMS_SQL, filmIds);
-
-        jdbcTemplate.query(sql, rs -> {
-            int filmId = rs.getInt("film_id");
-            Director director = new Director(rs.getInt("id"), rs.getString("name"));
-
-            for (Film film : films) {
-                if (film.getId() == filmId) {
-                    film.getDirectors().add(director);
                     break;
                 }
             }
