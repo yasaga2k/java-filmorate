@@ -30,6 +30,7 @@ class FilmServiceIntegrationTest {
     private UserService userService;
 
     private Film testFilm;
+
     private User testUser;
 
     @BeforeEach
