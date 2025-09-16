@@ -9,7 +9,7 @@ public class Review {
     @NotBlank(message = "Содержание отзыва не может быть пустым")
     private String content;
     private boolean isPositive;
-    private long userId;
+    private int userId;
     private int filmId;
     private int useful; // рейтинг полезности
 }

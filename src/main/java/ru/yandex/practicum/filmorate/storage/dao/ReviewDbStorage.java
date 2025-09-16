@@ -1,0 +1,37 @@
+package ru.yandex.practicum.filmorate.storage.dao;
+import ru.yandex.practicum.filmorate.model.Review;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+
+public class ReviewDbStorage {
+    private final JdbcTemplate jdbcTemplate;
+
+    public ReviewDbStorage(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public Review save(Review review) {
+        String sql = "INSERT INTO reviews (content, isPositive, userId, filmId, useful) VALUES (?, ?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            stmt.setString(1, review.getContent());
+            stmt.setBoolean(2, review.isPositive());
+            stmt.setLong(3, review.getUserId());
+            stmt.setInt(4, review.getFilmId());
+            stmt.setInt(5, review.getUseful());
+            return stmt;
+        }, keyHolder);
+
+        review.setFilmId(keyHolder.getKey().intValue());
+        return review;
+    }
+}
+
+
