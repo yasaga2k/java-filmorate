@@ -103,10 +103,10 @@ public class UserService {
 
     public List<Film> getRecommendations(int userId) {
         findById(userId); // Проверяем существование пользователя
-        
+
         // Получаем фильмы, которые лайкнул целевой пользователь
         Set<Integer> userLikes = filmsLikesDbStorage.getLikesByUserId(userId);
-        
+
         // Если пользователь ничего не лайкал, возвращаем пустой список
         if (userLikes.isEmpty()) {
             log.info("Пользователь {} не лайкал фильмы, рекомендации невозможны", userId);
@@ -153,7 +153,7 @@ public class UserService {
         recommendations.removeAll(userLikes);
 
         log.info("Найден похожий пользователь {} с {} общими лайками. Рекомендовано {} фильмов для пользователя {}",
-                 mostSimilarUserId, userSimilarity.get(mostSimilarUserId), recommendations.size(), userId);
+                mostSimilarUserId, userSimilarity.get(mostSimilarUserId), recommendations.size(), userId);
 
         // Возвращаем рекомендованные фильмы
         return recommendations.stream()
