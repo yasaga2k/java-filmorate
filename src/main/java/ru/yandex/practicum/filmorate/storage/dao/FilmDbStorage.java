@@ -100,14 +100,6 @@ public class FilmDbStorage implements FilmStorage {
              WHERE fg.film_id IN (%s)\s
              ORDER BY g.id ASC
             \s""";
-
-    private static final String LOAD_DIRECTORS_FOR_FILMS_SQL = """
-             SELECT DISTINCT fg.film_id, g.id, g.name\s
-             FROM directors_of_films fg\s
-             JOIN directors g ON fg.director_id = g.id\s
-             WHERE fg.film_id IN (%s)\s
-             ORDER BY g.id ASC
-            \s""";
     private static final String LOAD_LIKES_FOR_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
     private static final String LOAD_LIKES_FOR_FILMS_SQL = "SELECT film_id, user_id FROM films_likes " +
             "WHERE film_id IN (";
