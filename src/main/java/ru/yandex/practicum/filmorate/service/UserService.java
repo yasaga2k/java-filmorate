@@ -6,13 +6,21 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Friendship;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Comparator;
 
 @Service
 @Slf4j
@@ -23,6 +31,10 @@ public class UserService {
     private final UserStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
     private final FriendshipStorage friendshipStorage;
+    private final FilmsLikesDbStorage filmsLikesDbStorage;
+    
+    @Qualifier("filmDbStorage")
+    private final FilmStorage filmStorage;
 
     public List<User> findAll() {
         log.info("GET /users - Получение всех пользователей");
@@ -87,6 +99,68 @@ public class UserService {
 
         return friendshipDbStorage.findCommonFriends(userId, otherId).stream()
                 .map(this::findById)
+                .collect(Collectors.toList());
+    }
+    
+    public List<Film> getRecommendations(int userId) {
+        findById(userId); // Проверяем существование пользователя
+        
+        // Получаем фильмы, которые лайкнул настоящий пользователь
+        Set<Integer> userLikes = filmsLikesDbStorage.getLikesByUserId(userId);
+        
+        // Если пользователь ничего не лайкал, возвращаем пустой список
+        if (userLikes.isEmpty()) {
+            log.info("Пользователь {} не лайкал фильмы, рекомендации невозможны", userId);
+            return List.of();
+        }
+        
+        // Находим пользователя с максимальным количеством пересечений по лайкам
+        Map<Integer, Integer> userSimilarity = new HashMap<>();
+        Set<Integer> allUsersWithLikes = filmsLikesDbStorage.getAllUsersWithLikes();
+        
+        for (Integer otherUserId : allUsersWithLikes) {
+            if (!otherUserId.equals(userId)) {
+                Set<Integer> otherUserLikes = filmsLikesDbStorage.getLikesByUserId(otherUserId);
+                
+                // Подсчитываем количество общих лайков
+                Set<Integer> intersection = new HashSet<>(userLikes);
+                intersection.retainAll(otherUserLikes);
+                
+                if (!intersection.isEmpty()) {
+                    userSimilarity.put(otherUserId, intersection.size());
+                }
+            }
+        }
+        
+        // Если не найдено похожих пользователей, возвращаем пустой список
+        if (userSimilarity.isEmpty()) {
+            log.info("Не найдены пользователи с похожими вкусами для пользователя {}", userId);
+            return List.of();
+        }
+        
+        // Находим пользователя с максимальным количеством пересечений
+        Integer mostSimilarUserId = userSimilarity.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+        
+        if (mostSimilarUserId == null) {
+            return List.of();
+        }
+        
+        // Получаем фильмы, которые лайкнул похожий пользователь, но не лайкнул настоящий
+        Set<Integer> similarUserLikes = filmsLikesDbStorage.getLikesByUserId(mostSimilarUserId);
+        Set<Integer> recommendations = new HashSet<>(similarUserLikes);
+        recommendations.removeAll(userLikes);
+        
+        log.info("Найден похожий пользователь {} с {} общими лайками. Рекомендовано {} фильмов для пользователя {}", 
+                 mostSimilarUserId, userSimilarity.get(mostSimilarUserId), recommendations.size(), userId);
+        
+        // Возвращаем рекомендованные фильмы
+        return recommendations.stream()
+                .map(filmId -> filmStorage.findById(filmId))
+                .filter(filmOpt -> filmOpt.isPresent())
+                .map(filmOpt -> filmOpt.get())
                 .collect(Collectors.toList());
     }
 }

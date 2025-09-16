@@ -10,6 +10,8 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -31,13 +33,19 @@ class UserServiceTest {
 
     @Mock
     private FriendshipStorage friendshipStorage;
+    
+    @Mock
+    private FilmsLikesDbStorage filmsLikesDbStorage;
+    
+    @Mock
+    private FilmStorage filmStorage;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        userService = new UserService(userStorage, friendshipDbStorage, friendshipStorage);
+        userService = new UserService(userStorage, friendshipDbStorage, friendshipStorage, filmsLikesDbStorage, filmStorage);
 
         testUser = new User();
         testUser.setId(1);
