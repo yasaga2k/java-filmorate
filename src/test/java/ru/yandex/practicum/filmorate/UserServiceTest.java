@@ -33,10 +33,10 @@ class UserServiceTest {
 
     @Mock
     private FriendshipStorage friendshipStorage;
-    
+
     @Mock
     private FilmsLikesDbStorage filmsLikesDbStorage;
-    
+
     @Mock
     private FilmStorage filmStorage;
 
