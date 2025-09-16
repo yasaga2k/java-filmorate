@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,6 +93,18 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.findPopularFilms(count);
+        return getPopularFilms(count, null, null);
+    }
+
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        // Валидация параметров на существование жанра и указание корректного года
+        if (genreId != null) {
+            genreService.findById(genreId);
+        }
+        int currentYear = LocalDate.now().getYear();
+        if (year != null && (year < 1895 || year > currentYear)) {
+            throw new ValidationException("Неккоретный год: " + year);
+        }
+        return filmStorage.findPopularFilms(count, genreId, year);
     }
 }
