@@ -28,14 +28,48 @@ public class FilmDbStorage implements FilmStorage {
     private static final String FIND_BY_ID_SQL = "SELECT f.*, m.name as mpa_name FROM films f " +
             "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id WHERE f.id = ?";
     private static final String FIND_POPULAR_FILMS_SQL = """
-            SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count\s
-            FROM films f
-            LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
-            LEFT JOIN films_likes l ON f.id = l.film_id
-            GROUP BY f.id
-            ORDER BY likes_count DESC
-            LIMIT ?
-           \s""";
+                SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+                LEFT JOIN films_likes l ON f.id = l.film_id
+                GROUP BY f.id
+                ORDER BY likes_count DESC
+                LIMIT ?
+            """;
+
+    private static final String FIND_POPULAR_FILMS_BY_GENRE_SQL = """
+                SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+                LEFT JOIN films_likes l ON f.id = l.film_id
+                WHERE EXISTS (SELECT 1 FROM film_genres fg WHERE fg.film_id = f.id AND fg.genre_id = ?)
+                GROUP BY f.id
+                ORDER BY likes_count DESC
+                LIMIT ?
+            """;
+
+    private static final String FIND_POPULAR_FILMS_BY_YEAR_SQL = """
+                SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+                LEFT JOIN films_likes l ON f.id = l.film_id
+                WHERE YEAR(f.release_date) = ?
+                GROUP BY f.id
+                ORDER BY likes_count DESC
+                LIMIT ?
+            """;
+
+    private static final String FIND_POPULAR_FILMS_BY_GENRE_AND_YEAR_SQL = """
+                SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+                LEFT JOIN films_likes l ON f.id = l.film_id
+                WHERE EXISTS (SELECT 1 FROM film_genres fg WHERE fg.film_id = f.id AND fg.genre_id = ?)
+                AND YEAR(f.release_date) = ?
+                GROUP BY f.id
+                ORDER BY likes_count DESC
+                LIMIT ?
+            """;
     private static final String CREATE_SQL = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
             "VALUES (?, ?, ?, ?, ?)";
     private static final String UPDATE_SQL = "UPDATE films SET name = ?, description = ?, " +
@@ -51,12 +85,12 @@ public class FilmDbStorage implements FilmStorage {
             ORDER BY g.id ASC""";
 
     private static final String LOAD_GENRES_FOR_FILMS_SQL = """
-            SELECT DISTINCT fg.film_id, g.id, g.name\s
-            FROM film_genres fg\s
-            JOIN genres g ON fg.genre_id = g.id\s
-            WHERE fg.film_id IN (%s)\s
-            ORDER BY g.id ASC
-           \s""";
+             SELECT DISTINCT fg.film_id, g.id, g.name\s
+             FROM film_genres fg\s
+             JOIN genres g ON fg.genre_id = g.id\s
+             WHERE fg.film_id IN (%s)\s
+             ORDER BY g.id ASC
+            \s""";
     private static final String LOAD_LIKES_FOR_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
     private static final String LOAD_LIKES_FOR_FILMS_SQL = "SELECT film_id, user_id FROM films_likes " +
             "WHERE film_id IN (";
@@ -86,7 +120,29 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> findPopularFilms(int count) {
-        List<Film> films = jdbcTemplate.query(FIND_POPULAR_FILMS_SQL, this::mapRowToFilm, count);
+        return findPopularFilms(count, null, null);
+    }
+
+    @Override
+    public List<Film> findPopularFilms(int count, Integer genreId, Integer year) {
+        String sql;
+        Object[] params;
+
+        if (genreId != null && year != null) {
+            sql = FIND_POPULAR_FILMS_BY_GENRE_AND_YEAR_SQL;
+            params = new Object[]{genreId, year, count};
+        } else if (genreId != null) {
+            sql = FIND_POPULAR_FILMS_BY_GENRE_SQL;
+            params = new Object[]{genreId, count};
+        } else if (year != null) {
+            sql = FIND_POPULAR_FILMS_BY_YEAR_SQL;
+            params = new Object[]{year, count};
+        } else {
+            sql = FIND_POPULAR_FILMS_SQL;
+            params = new Object[]{count};
+        }
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, params);
         loadGenresForFilms(films);
         loadLikesForFilms(films);
         return films;
