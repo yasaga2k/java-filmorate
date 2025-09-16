@@ -16,6 +16,9 @@ public interface FilmStorage {
 
     void delete(int id);
 
+    // Новый метод с фильтрацией
+    List<Film> findPopularFilms(int count, Integer genreId, Integer year);
+
     List<Film> findPopularFilms(int count);
 
     List<Film> getAllFilmsFromDirector(int directorId);
