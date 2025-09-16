@@ -3,6 +3,11 @@ CREATE TABLE IF NOT EXISTS mpa_ratings (
     name VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS directors(
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS films (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -11,6 +16,14 @@ CREATE TABLE IF NOT EXISTS films (
     duration INTEGER,
     mpa_id INTEGER,
     FOREIGN KEY (mpa_id) REFERENCES mpa_ratings(id)
+);
+
+CREATE TABLE IF NOT EXISTS directors_of_films (
+    director_id INTEGER,
+    film_id INTEGER,
+    PRIMARY KEY (film_id, director_id),
+    FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
+    FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS genres (
