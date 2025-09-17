@@ -19,7 +19,10 @@ public interface FilmStorage {
     // Новый метод с фильтрацией
     List<Film> findPopularFilms(int count, Integer genreId, Integer year);
 
+    // Старый метод для обратной совместимости
     List<Film> findPopularFilms(int count);
 
     List<Film> getAllFilmsFromDirector(int directorId);
+
+    List<Film> searchFilms(String query, boolean searchByTitle, boolean searchByDirector);
 }

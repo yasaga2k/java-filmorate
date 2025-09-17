@@ -133,4 +133,26 @@ public class FilmService {
         throw new IllegalArgumentException("неправильный параметр sortBy " + sortBy);
 
     }
+
+    public List<Film> searchFilms(String query, String by) {
+        String searchQuery = query.toLowerCase();
+        String[] searchBy = by.split(",");
+
+        boolean searchByTitle = false;
+        boolean searchByDirector = false;
+
+        for (String param : searchBy) {
+            if ("title".equals(param.trim())) {
+                searchByTitle = true;
+            } else if ("director".equals(param.trim())) {
+                searchByDirector = true;
+            }
+        }
+
+        if (!searchByTitle && !searchByDirector) {
+            throw new ValidationException("Параметр 'by' должен содержать 'title' и/или 'director'");
+        }
+
+        return filmStorage.searchFilms(searchQuery, searchByTitle, searchByDirector);
+    }
 }
