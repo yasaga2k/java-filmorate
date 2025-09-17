@@ -100,9 +100,49 @@ public class FilmDbStorage implements FilmStorage {
              WHERE fg.film_id IN (%s)\s
              ORDER BY g.id ASC
             \s""";
+    private static final String LOAD_DIRECTORS_FOR_FILMS_SQL = """
+             SELECT DISTINCT df.film_id, d.id, d.name\s
+             FROM directors_of_films df\s
+             JOIN directors d ON df.director_id = d.id\s
+             WHERE df.film_id IN (%s)\s
+             ORDER BY d.id ASC
+            \s""";
     private static final String LOAD_LIKES_FOR_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
     private static final String LOAD_LIKES_FOR_FILMS_SQL = "SELECT film_id, user_id FROM films_likes " +
             "WHERE film_id IN (";
+    private static final String SEARCH_BY_TITLE_SQL = """
+            SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
+            FROM films f
+            LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+            LEFT JOIN films_likes fl ON f.id = fl.film_id
+            WHERE LOWER(f.name) LIKE ?
+            GROUP BY f.id
+            ORDER BY likes_count DESC
+            """;
+
+    private static final String SEARCH_BY_DIRECTOR_SQL = """
+            SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
+            FROM films f
+            LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+            LEFT JOIN films_likes fl ON f.id = fl.film_id
+            LEFT JOIN directors_of_films df ON f.id = df.film_id
+            LEFT JOIN directors d ON df.director_id = d.id
+            WHERE LOWER(d.name) LIKE ?
+            GROUP BY f.id
+            ORDER BY likes_count DESC
+            """;
+
+    private static final String SEARCH_BY_BOTH_SQL = """
+            SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
+            FROM films f
+            LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+            LEFT JOIN films_likes fl ON f.id = fl.film_id
+            LEFT JOIN directors_of_films df ON f.id = df.film_id
+            LEFT JOIN directors d ON df.director_id = d.id
+            WHERE (LOWER(f.name) LIKE ? OR LOWER(d.name) LIKE ?)
+            GROUP BY f.id
+            ORDER BY likes_count DESC
+            """;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -227,6 +267,30 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> searchFilms(String query, boolean searchByTitle, boolean searchByDirector) {
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
+        List<Film> films;
+
+        if (searchByTitle && searchByDirector) {
+            films = jdbcTemplate.query(SEARCH_BY_BOTH_SQL, this::mapRowToFilm, searchPattern, searchPattern);
+        } else if (searchByTitle) {
+            films = jdbcTemplate.query(SEARCH_BY_TITLE_SQL, this::mapRowToFilm, searchPattern);
+        } else if (searchByDirector) {
+            films = jdbcTemplate.query(SEARCH_BY_DIRECTOR_SQL, this::mapRowToFilm, searchPattern);
+        } else { // Если ни один параметр не задан, возвращаем пустой список
+            return List.of();
+        }
+
+        if (!films.isEmpty()) {
+            loadGenresForFilms(films);
+            loadLikesForFilms(films);
+            loadDirectorsForFilms(films);
+        }
+        return films;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
@@ -277,6 +341,28 @@ public class FilmDbStorage implements FilmStorage {
                 (rs, rowNum) -> new Director(rs.getInt("id"), rs.getString("name")),
                 film.getId());
         film.setDirectors(new LinkedHashSet<>(directors));
+    }
+
+    private void loadDirectorsForFilms(List<Film> films) {
+        if (films.isEmpty()) return;
+
+        String filmIds = films.stream()
+                .map(f -> String.valueOf(f.getId()))
+                .collect(Collectors.joining(","));
+
+        String sql = String.format(LOAD_DIRECTORS_FOR_FILMS_SQL, filmIds);
+
+        jdbcTemplate.query(sql, rs -> {
+            int filmId = rs.getInt("film_id");
+            Director director = new Director(rs.getInt("id"), rs.getString("name"));
+
+            for (Film film : films) {
+                if (film.getId() == filmId) {
+                    film.getDirectors().add(director);
+                    break;
+                }
+            }
+        });
     }
 
     private void loadGenresForFilms(List<Film> films) {
