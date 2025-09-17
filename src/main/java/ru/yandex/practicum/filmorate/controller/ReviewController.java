@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.service.ReviewService;
 public class ReviewController {
 
     private final ReviewService reviewService;
+
     // создание
     @PostMapping
     public ResponseEntity<Review> createReview(@Valid @RequestBody Review review) {
@@ -22,6 +23,7 @@ public class ReviewController {
         Review savedReview = reviewService.save(review);
         return ResponseEntity.ok(savedReview);
     }
+
     // обновление
     @PutMapping("/reviews")
     public ResponseEntity<Review> updateReview(@RequestBody Review review) {
@@ -29,5 +31,13 @@ public class ReviewController {
         Review updatedReview = reviewService.update(review);
         return ResponseEntity.ok(updatedReview);
     }
+
+    // удаление
+    @DeleteMapping("/reviews/{id}")
+    public ResponseEntity<Void> deleteReview(@PathVariable int id) {
+        reviewService.delete(id); // Вызов метода delete в сервисе для удаления отзыва
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

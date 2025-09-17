@@ -8,6 +8,8 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -31,6 +33,16 @@ public class ReviewService {
         return reviewStorage.update(review);
     }
 
+    public void delete(int id) {
+        Optional<Review> optionalReview = reviewStorage.findById(id);
+        if (!optionalReview.isPresent()) {
+            throw new NotFoundException("Отзыв с id=" + id + " не найден");
+        }
+        Review existingReview = optionalReview.get();
+        reviewStorage.delete(id);
+    }
+
+
     private void validateReview(Review review) {
         if (review.getContent() == null || review.getContent().isEmpty()) {
             throw new ValidationException("Содержание отзыва не может быть пустым.");
@@ -49,4 +61,5 @@ public class ReviewService {
             throw new ValidationException("При работе с отзывом фильм или пользователь не были найдены.");
         }
     }
+
 }
