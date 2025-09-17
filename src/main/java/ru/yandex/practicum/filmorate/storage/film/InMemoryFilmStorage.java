@@ -23,10 +23,25 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public List<Film> findPopularFilms(int count) {
+        return findPopularFilms(count, null, null);
+    }
+
+    @Override
+    public List<Film> findPopularFilms(int count, Integer genreId, Integer year) {
         return films.values().stream()
+                .filter(film -> filterByGenre(film, genreId))
+                .filter(film -> filterByYear(film, year))
                 .sorted(Comparator.comparingInt((Film f) -> -f.getLikes().size()))
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Film> getAllFilmsFromDirector(int directorId) {
+        return films.values().stream()
+                .filter(f -> f.getDirectors().stream()
+                        .anyMatch(d -> d.getId() == directorId))
+                .toList();
     }
 
     @Override
@@ -45,5 +60,21 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public void delete(int id) {
         films.remove(id);
+    }
+
+    // Методы фильтра
+    private boolean filterByGenre(Film film, Integer genreId) {
+        if (genreId == null) {
+            return true;
+        }
+        return film.getGenres().stream()
+                .anyMatch(genre -> genre.id() == genreId);
+    }
+
+    private boolean filterByYear(Film film, Integer year) {
+        if (year == null) {
+            return true;
+        }
+        return film.getReleaseDate().getYear() == year;
     }
 }

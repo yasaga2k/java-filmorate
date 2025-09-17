@@ -104,8 +104,19 @@ public class UserService {
     public List<Film> getRecommendations(int userId) {
         findById(userId); // Проверяем существование пользователя
 
+        // Загружаем все лайки
+        List<Map<String, Integer>> allLikes = filmsLikesDbStorage.getAllLikes();
+        
+        // Группируем лайки по пользователям
+        Map<Integer, Set<Integer>> userLikesMap = new HashMap<>();
+        for (Map<String, Integer> like : allLikes) {
+            Integer likeUserId = like.get("userId");
+            Integer filmId = like.get("filmId");
+            userLikesMap.computeIfAbsent(likeUserId, k -> new HashSet<>()).add(filmId);
+        }
+
         // Получаем фильмы, которые лайкнул целевой пользователь
-        Set<Integer> userLikes = filmsLikesDbStorage.getLikesByUserId(userId);
+        Set<Integer> userLikes = userLikesMap.getOrDefault(userId, Set.of());
 
         // Если пользователь ничего не лайкал, возвращаем пустой список
         if (userLikes.isEmpty()) {
@@ -115,11 +126,11 @@ public class UserService {
 
         // Находим пользователя с максимальным количеством пересечений по лайкам
         Map<Integer, Integer> userSimilarity = new HashMap<>();
-        Set<Integer> allUsersWithLikes = filmsLikesDbStorage.getAllUsersWithLikes();
 
-        for (Integer otherUserId : allUsersWithLikes) {
+        for (Map.Entry<Integer, Set<Integer>> entry : userLikesMap.entrySet()) {
+            Integer otherUserId = entry.getKey();
             if (!otherUserId.equals(userId)) {
-                Set<Integer> otherUserLikes = filmsLikesDbStorage.getLikesByUserId(otherUserId);
+                Set<Integer> otherUserLikes = entry.getValue();
 
                 // Подсчитываем количество общих лайков
                 Set<Integer> intersection = new HashSet<>(userLikes);
@@ -144,11 +155,12 @@ public class UserService {
                 .orElse(null);
 
         if (mostSimilarUserId == null) {
+            log.info("Не удалось найти наиболее похожего пользователя для пользователя {}", userId);
             return List.of();
         }
 
         // Получаем фильмы, которые лайкнул похожий пользователь, но не лайкнул целевой
-        Set<Integer> similarUserLikes = filmsLikesDbStorage.getLikesByUserId(mostSimilarUserId);
+        Set<Integer> similarUserLikes = userLikesMap.getOrDefault(mostSimilarUserId, Set.of());
         Set<Integer> recommendations = new HashSet<>(similarUserLikes);
         recommendations.removeAll(userLikes);
 
