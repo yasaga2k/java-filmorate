@@ -34,6 +34,26 @@ public class ReviewDbStorage {
         review.setFilmId(keyHolder.getKey().intValue());
         return review;
     }
+
+    public Review update(Review review) {
+        String sql = "UPDATE reviews " +
+                "SET content = ?, " +
+                "    isPositive = ?, " +
+                "    userId = ?, " +
+                "    filmId = ?, " +
+                "    useful = ? " +
+                "WHERE reviewId = ?";
+
+        jdbcTemplate.update(sql,
+                review.getContent(),
+                review.isPositive(),
+                review.getUserId(),
+                review.getFilmId(),
+                review.getUseful(),
+                review.getReviewId());
+
+        return review;
+    }
 }
 
 

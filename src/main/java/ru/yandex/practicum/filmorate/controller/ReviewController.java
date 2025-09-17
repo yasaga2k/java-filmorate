@@ -4,10 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
@@ -18,11 +15,19 @@ import ru.yandex.practicum.filmorate.service.ReviewService;
 public class ReviewController {
 
     private final ReviewService reviewService;
-
+    // создание
     @PostMapping
     public ResponseEntity<Review> createReview(@Valid @RequestBody Review review) {
         log.info("Создание нового отзыва: {}", review);
         Review savedReview = reviewService.save(review);
         return ResponseEntity.ok(savedReview);
     }
+    // обновление
+    @PutMapping("/reviews")
+    public ResponseEntity<Review> updateReview(@RequestBody Review review) {
+        // Здесь вы можете добавить валидацию объекта review
+        Review updatedReview = reviewService.update(review);
+        return ResponseEntity.ok(updatedReview);
+    }
+
 }
