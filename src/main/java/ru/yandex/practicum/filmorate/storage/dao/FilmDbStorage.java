@@ -361,7 +361,7 @@ public class FilmDbStorage implements FilmStorage {
 
             for (Film film : films) {
                 if (film.getId() == filmId) {
-                    if (film.getDirectors() == null) {
+                    if (film.getDirectors() == null || film.getDirectors().isEmpty()) {
                         film.setDirectors(new LinkedHashSet<>());
                     }
                     film.getDirectors().add(director);
