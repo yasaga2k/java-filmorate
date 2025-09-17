@@ -1,4 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.dao;
+import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Review;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -8,6 +9,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
+@Component
 public class ReviewDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
