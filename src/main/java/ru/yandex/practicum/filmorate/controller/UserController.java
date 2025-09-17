@@ -61,7 +61,7 @@ public class UserController {
     public void delete(@PathVariable int id) {
         userService.delete(id);
     }
-  
+
     @GetMapping("/{id}/recommendations")
     public List<Film> getRecommendations(@PathVariable int id) {
         return userService.getRecommendations(id);
