@@ -121,16 +121,16 @@ public class FilmDbStorage implements FilmStorage {
             """;
 
     private static final String SEARCH_BY_DIRECTOR_SQL = """
-    SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
-    FROM films f
-    LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
-    LEFT JOIN films_likes fl ON f.id = fl.film_id
-    LEFT JOIN directors_of_films df ON f.id = df.film_id
-    LEFT JOIN directors d ON df.director_id = d.id
-    WHERE LOWER(d.name) LIKE ?
-    GROUP BY f.id\s
-    ORDER BY likes_count DESC
-   \s""";
+             SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
+             FROM films f
+             LEFT JOIN mpa_ratings m ON f.mpa_id = m.id
+             LEFT JOIN films_likes fl ON f.id = fl.film_id
+             LEFT JOIN directors_of_films df ON f.id = df.film_id
+             LEFT JOIN directors d ON df.director_id = d.id
+             WHERE LOWER(d.name) LIKE ?
+             GROUP BY f.id\s
+             ORDER BY likes_count DESC
+            \s""";
 
     private static final String SEARCH_BY_BOTH_SQL = """
             SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
@@ -253,6 +253,9 @@ public class FilmDbStorage implements FilmStorage {
         if (mpaName != null) {
             film.setMpa(new MpaRating(mpaId, mpaName));
         }
+
+        film.setDirectors(Collections.emptySet());
+
         return film;
     }
 
