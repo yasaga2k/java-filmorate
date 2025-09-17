@@ -106,7 +106,7 @@ public class UserService {
 
         // Загружаем все лайки
         List<Map<String, Integer>> allLikes = filmsLikesDbStorage.getAllLikes();
-        
+
         // Группируем лайки по пользователям
         Map<Integer, Set<Integer>> userLikesMap = new HashMap<>();
         for (Map<String, Integer> like : allLikes) {
