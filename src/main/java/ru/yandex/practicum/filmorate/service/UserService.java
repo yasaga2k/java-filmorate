@@ -180,4 +180,5 @@ public class UserService {
         userStorage.delete(id);
         log.info("Пользователь с ID={} удален", id);
     }
+
 }
