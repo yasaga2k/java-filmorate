@@ -38,7 +38,7 @@ public class FilmsLikesDbStorage {
                 (rs, rowNum) -> rs.getInt("user_id"),
                 filmId));
     }
-    
+
     //Получаем все фильмы, которые лайкнул пользователь
     public Set<Integer> getLikesByUserId(int userId) {
         return Set.copyOf(jdbcTemplate.query(GET_LIKES_BY_USER_SQL,
@@ -54,8 +54,8 @@ public class FilmsLikesDbStorage {
 
     //Полусаем все лайки
     public List<Map<String, Integer>> getAllLikes() {
-        return jdbcTemplate.query(GET_ALL_LIKES_SQL, (rs, rowNum) -> 
-                Map.of("filmId", rs.getInt("film_id"), 
-                       "userId", rs.getInt("user_id")));
+        return jdbcTemplate.query(GET_ALL_LIKES_SQL, (rs, rowNum) ->
+                Map.of("filmId", rs.getInt("film_id"),
+                        "userId", rs.getInt("user_id")));
     }
 }
