@@ -89,4 +89,10 @@ public class UserService {
                 .map(this::findById)
                 .collect(Collectors.toList());
     }
+
+    public void delete(int id) {
+        findById(id);
+        userStorage.delete(id);
+        log.info("Пользователь с ID={} удален", id);
+    }
 }
