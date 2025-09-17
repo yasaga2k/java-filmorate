@@ -131,6 +131,11 @@ public class FilmService {
         }
 
         throw new IllegalArgumentException("неправильный параметр sortBy " + sortBy);
+    }
 
+    public void delete(int id) {
+        findById(id);
+        filmStorage.delete(id);
+        log.info("Фильм с ID={} удален", id);
     }
 }
