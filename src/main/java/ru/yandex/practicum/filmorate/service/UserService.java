@@ -100,7 +100,7 @@ public class UserService {
                 .map(this::findById)
                 .collect(Collectors.toList());
     }
-  
+
     public List<Film> getRecommendations(int userId) {
         findById(userId); // Проверяем существование пользователя
 
@@ -174,11 +174,10 @@ public class UserService {
                 .map(filmOpt -> filmOpt.get())
                 .collect(Collectors.toList());
     }
-  
+
     public void delete(int id) {
         findById(id);
         userStorage.delete(id);
         log.info("Пользователь с ID={} удален", id);
     }
-
 }
