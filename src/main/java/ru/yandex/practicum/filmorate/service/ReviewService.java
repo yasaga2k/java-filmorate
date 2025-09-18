@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -65,5 +66,9 @@ public class ReviewService {
     public Review findById(int id) {
         Optional<Review> optionalReview = reviewStorage.findById(id);
         return optionalReview.orElse(null);
+    }
+
+    public List<Review> findByFilmId(Integer filmId, int count) {
+        return reviewStorage.findByFilmId(filmId, count);
     }
 }

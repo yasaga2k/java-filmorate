@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -18,6 +19,7 @@ public class ReviewDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
     private static final String FIND_BY_ID_SQL = "SELECT * FROM reviews WHERE reviewId = ?";
+    private static final String FIND_BY_FILM_ID_SQL = "SELECT * FROM reviews WHERE filmId = ? LIMIT ?";
 
     public ReviewDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -88,6 +90,14 @@ public class ReviewDbStorage {
         review.setUseful(rs.getInt("useful"));
 
         return review;
+    }
+
+    public List<Review> findByFilmId(Integer filmId, int count) {
+        if (filmId == null) {
+            return jdbcTemplate.query("SELECT * FROM reviews LIMIT ?", this::mapRowToReview, count);
+        } else {
+            return jdbcTemplate.query(FIND_BY_FILM_ID_SQL, this::mapRowToReview, filmId, count);
+        }
     }
 
 }
