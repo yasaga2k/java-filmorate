@@ -92,8 +92,13 @@ public class ReviewService {
         Optional<Review> optionalReview = reviewStorage.findById(reviewId);
         if (optionalReview.isPresent()) {
             Review review = optionalReview.get();
-            review.setUseful(review.getUseful() + ratingChange); // Обновляем рейтинг
-            reviewStorage.update(review); // Сохраняем изменения в базе данных
+            int newUseful = review.getUseful() + ratingChange;
+            if (newUseful >= 0) { // Проверяем, что новое значение не отрицательное
+                review.setUseful(newUseful); // Обновляем рейтинг
+                reviewStorage.update(review); // Сохраняем изменения в базе данных
+            } else {
+                throw new IllegalArgumentException("Рейтинг полезности не может быть отрицательным");
+            }
         } else {
             throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
