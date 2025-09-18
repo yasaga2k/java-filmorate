@@ -66,7 +66,6 @@ public class ReviewDbStorage {
         jdbcTemplate.update(sql, id);
     }
 
-
     public Optional<Review> findById(int id) {
         try {
             Review review = jdbcTemplate.queryForObject(FIND_BY_ID_SQL, this::mapRowToReview, id);
@@ -81,9 +80,9 @@ public class ReviewDbStorage {
 
     private Review mapRowToReview(ResultSet rs, int rowNum) throws SQLException {
         Review review = new Review();
-        review.setId(rs.getInt("reviewId")); // почемуто @Data не работает
+        review.setReviewId(rs.getInt("reviewId"));
         review.setContent(rs.getString("content"));
-        review.setIsPositive(rs.getBoolean("isPositive")); // почемуто @Data не работает
+        review.setPositive(rs.getBoolean("isPositive"));
         review.setUserId(rs.getInt("userId"));
         review.setFilmId(rs.getInt("filmId"));
         review.setUseful(rs.getInt("useful"));

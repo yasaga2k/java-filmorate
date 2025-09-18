@@ -27,7 +27,6 @@ public class ReviewController {
     // обновление
     @PutMapping("/reviews")
     public ResponseEntity<Review> updateReview(@RequestBody Review review) {
-        // Здесь вы можете добавить валидацию объекта review
         Review updatedReview = reviewService.update(review);
         return ResponseEntity.ok(updatedReview);
     }
@@ -35,9 +34,17 @@ public class ReviewController {
     // удаление
     @DeleteMapping("/reviews/{id}")
     public ResponseEntity<Void> deleteReview(@PathVariable int id) {
-        reviewService.delete(id); // Вызов метода delete в сервисе для удаления отзыва
+        reviewService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
+     // поиск по id
+    @GetMapping("/reviews/{id}")
+    public ResponseEntity<Review> getReviewById(@PathVariable int id) {
+        Review review = reviewService.findById(id);
+        if (review == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(review);
+    }
 
 }

@@ -62,4 +62,8 @@ public class ReviewService {
         }
     }
 
+    public Review findById(int id) {
+        Optional<Review> optionalReview = reviewStorage.findById(id);
+        return optionalReview.orElse(null);
+    }
 }
