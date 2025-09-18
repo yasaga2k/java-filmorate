@@ -1,4 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.dao;
+
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Review;
@@ -99,7 +100,6 @@ public class ReviewDbStorage {
             return jdbcTemplate.query(FIND_BY_FILM_ID_SQL, this::mapRowToReview, filmId, count);
         }
     }
-
 }
 
 
