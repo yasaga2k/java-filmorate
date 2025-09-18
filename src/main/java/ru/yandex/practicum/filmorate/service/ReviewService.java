@@ -71,4 +71,31 @@ public class ReviewService {
     public List<Review> findByFilmId(Integer filmId, int count) {
         return reviewStorage.findByFilmId(filmId, count);
     }
+
+    public void addLike(int reviewId, int userId) {
+        updateReviewRating(reviewId, 1); // Увеличиваем рейтинг на 1
+    }
+
+    public void removeLike(int reviewId, int userId) {
+        updateReviewRating(reviewId, -1); // Уменьшаем рейтинг на 1
+    }
+
+    public void addDislike(int reviewId, int userId) {
+        updateReviewRating(reviewId, -1); // Уменьшаем рейтинг на 1
+    }
+
+    public void removeDislike(int reviewId, int userId) {
+        updateReviewRating(reviewId, 1); // Увеличиваем рейтинг на 1
+    }
+
+    public void updateReviewRating(int reviewId, int ratingChange) {
+        Optional<Review> optionalReview = reviewStorage.findById(reviewId);
+        if (optionalReview.isPresent()) {
+            Review review = optionalReview.get();
+            review.setUseful(review.getUseful() + ratingChange); // Обновляем рейтинг
+            reviewStorage.update(review); // Сохраняем изменения в базе данных
+        } else {
+            throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
+        }
+    }
 }
