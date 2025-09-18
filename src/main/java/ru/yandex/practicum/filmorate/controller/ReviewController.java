@@ -50,7 +50,7 @@ public class ReviewController {
         return ResponseEntity.ok(review);
     }
 
-    // Получение всех отзывов по идентификатору фильма, если фильм не указан то все. Если кол-во не указано то 10.
+    // Получение всех отзывов по идентификатору фильма, если фильм не указан то все. Если кол-во не указано, то 10.
     @GetMapping("/reviews")
     public ResponseEntity<List<Review>> getReviewsByFilmId(@RequestParam(required = false) Integer filmId,
                                                            @RequestParam(defaultValue = "10") int count) {
