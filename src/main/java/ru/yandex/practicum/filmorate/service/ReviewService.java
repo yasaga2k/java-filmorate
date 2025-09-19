@@ -1,10 +1,8 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
 
@@ -12,97 +10,46 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ReviewService {
 
     private final ReviewDbStorage reviewStorage;
-    private final UserService userService;
-    private final FilmService filmService;
 
     public Review save(Review review) {
-        validateReview(review);
-        checkFilmAndUserExistence(review);
-
-        return reviewStorage.save(review);
+        Review reviewCreated = reviewStorage.create(review);
+        return reviewCreated;
     }
 
     public Review update(Review review) {
-        validateReview(review);
-        checkFilmAndUserExistence(review);
-
-        return reviewStorage.update(review);
+        Optional<Review> reviewUpdated = reviewStorage.update(review);
+        return reviewUpdated.orElse(null);
     }
 
-    public void delete(int id) {
-        Optional<Review> optionalReview = reviewStorage.findById(id);
-        if (!optionalReview.isPresent()) {
-            throw new NotFoundException("Отзыв с id=" + id + " не найден");
-        }
-        Review existingReview = optionalReview.get();
+    public void delete(Integer id) {
         reviewStorage.delete(id);
     }
 
-
-    private void validateReview(Review review) {
-        if (review.getContent() == null || review.getContent().isEmpty()) {
-            throw new ValidationException("Содержание отзыва не может быть пустым.");
-        }
+    public Review findById(Integer id) {
+        return reviewStorage.findById(id).orElseThrow(() -> new NotFoundException("Отзыв не найден."));
     }
 
-    private void checkFilmAndUserExistence(Review review) {
-        int filmId = review.getFilmId();
-        int userId = review.getUserId();
-
-        try {
-            filmService.findById(filmId); // Проверяем существование фильма
-            userService.findById(userId); // Проверяем существование пользователя
-        } catch (NotFoundException e) {
-            log.error("Ошибка при  проверке существования фильма или пользователя: {}", e.getMessage());
-            throw new ValidationException("При работе с отзывом фильм или пользователь не были найдены.");
-        }
+    public List<Review> findAll(Integer filmId, Integer count) {
+        return reviewStorage.findAll(filmId, count);
     }
 
-
-    public Optional<Review> findById(int id) {
-        Optional<Review> optionalReview = reviewStorage.findById(id);
-        optionalReview.ifPresent(System.out::println);
-        return optionalReview;
+    public void createLike(Integer id, Integer userId) {
+        reviewStorage.createLike(id, userId);
     }
 
-    public List<Review> findByFilmId(Integer filmId, int count) {
-        return reviewStorage.findByFilmId(filmId, count);
+    public void createDislike(Integer id, Integer userId) {
+        reviewStorage.createDislike(id, userId);
     }
 
-    public void addLike(int reviewId, int userId) {
-        updateReviewRating(reviewId, 1); // Увеличиваем рейтинг на 1
+    public void deleteLike(Integer id, Integer userId) {
+        reviewStorage.deleteLike(id, userId);
     }
 
-    public void removeLike(int reviewId, int userId) {
-        updateReviewRating(reviewId, -1); // Уменьшаем рейтинг на 1
-    }
-
-    public void addDislike(int reviewId, int userId) {
-        updateReviewRating(reviewId, -1); // Уменьшаем рейтинг на 1
-    }
-
-    public void removeDislike(int reviewId, int userId) {
-        updateReviewRating(reviewId, 1); // Увеличиваем рейтинг на 1
-    }
-
-    public void updateReviewRating(int reviewId, int ratingChange) {
-        Optional<Review> optionalReview = reviewStorage.findById(reviewId);
-        if (optionalReview.isPresent()) {
-            Review review = optionalReview.get();
-            int newUseful = review.getUseful() + ratingChange;
-            if (newUseful >= 0) { // Проверяем, что новое значение не отрицательное
-                review.setUseful(newUseful); // Обновляем рейтинг
-                reviewStorage.update(review); // Сохраняем изменения в базе данных
-            } else {
-                throw new IllegalArgumentException("Рейтинг полезности не может быть отрицательным");
-            }
-        } else {
-            throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
-        }
+    public void deleteDislike(Integer id, Integer userId) {
+        reviewStorage.deleteDislike(id, userId);
     }
 }

@@ -16,4 +16,12 @@ public interface ReviewStorage {
     Optional<Review> findById(int id);
 
     List<Review> findAll(int filmId, int count);
+
+    void createLike(int id, int userId);
+
+    void createDislike(int id, int userId);
+
+    void deleteLike(int id, int userId);
+
+    void deleteDislike(int id, int userId);
 }
