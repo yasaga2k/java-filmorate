@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
@@ -13,7 +12,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/reviews")
-@Slf4j
 @RequiredArgsConstructor
 public class ReviewController {
 
@@ -22,28 +20,27 @@ public class ReviewController {
     // создание отзыва
     @PostMapping
     public ResponseEntity<Review> createReview(@Valid @RequestBody Review review) {
-        log.info("Создание нового отзыва: {}", review);
         Review savedReview = reviewService.save(review);
         return ResponseEntity.ok(savedReview);
     }
 
     // обновление отзыва
-    @PutMapping("/reviews")
-    public ResponseEntity<Review> updateReview(@RequestBody Review review) {
+    @PutMapping
+    public ResponseEntity<Review> updateReview(@Valid @RequestBody Review review) {
         Review updatedReview = reviewService.update(review);
         return ResponseEntity.ok(updatedReview);
     }
 
     // удаление отзыва
-    @DeleteMapping("/reviews/{id}")
-    public ResponseEntity<Void> deleteReview(@PathVariable int id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Integer id) {
         reviewService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     // поиск по id
-    @GetMapping("/reviews/{id}")
-    public ResponseEntity<Review> getReviewById(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Review> getReviewById(@PathVariable Integer id) {
         Optional<Review> optionalReview = reviewService.findById(id);
         if (optionalReview.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -51,39 +48,40 @@ public class ReviewController {
         return ResponseEntity.ok(optionalReview.get());
     }
 
-    // Получение всех отзывов по идентификатору фильма, если фильм не указан то все. Если кол-во не указано, то 10.
-    @GetMapping("/reviews")
-    public ResponseEntity<List<Review>> getReviewsByFilmId(@RequestParam(required = false) Integer filmId,
-                                                           @RequestParam(defaultValue = "10") int count) {
-        List<Review> reviews = reviewService.findByFilmId(filmId, count); // Думаю можно через filmService
+    @GetMapping()
+    public ResponseEntity<List<Review>> getReviewsByFilmId(
+            @RequestParam(defaultValue = "0", required = false) @Positive Integer filmId,
+            @RequestParam(defaultValue = "10", required = false) @Positive Integer count) {
+        List<Review> reviews = reviewService.findAll(filmId, count);
         return ResponseEntity.ok(reviews);
     }
 
     // добавление лайка
-    @PutMapping("/reviews/{id}/like/{userId}")
-    public ResponseEntity<Void> addLike(@PathVariable int id, @PathVariable int userId) {
-        reviewService.addLike(id, userId);
+    @PutMapping("/{id}/like/{userId}")
+    public ResponseEntity<Void> addLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        reviewService.createLike(id, userId);
         return ResponseEntity.ok().build();
     }
 
     // удаление лайка
-    @DeleteMapping("/reviews/{id}/like/{userId}")
-    public ResponseEntity<Void> removeLike(@PathVariable int id, @PathVariable int userId) {
-        reviewService.removeLike(id, userId);
+    @DeleteMapping("/{id}/like/{userId}")
+    public ResponseEntity<Void> removeLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        reviewService.deleteLike(id, userId);
         return ResponseEntity.ok().build();
     }
 
     // добавление дизлайка
-    @PutMapping("/reviews/{id}/dislike/{userId}")
-    public ResponseEntity<Void> addDislike(@PathVariable int id, @PathVariable int userId) {
-        reviewService.addDislike(id, userId);
+    @PutMapping("/{id}/dislike/{userId}")
+    public ResponseEntity<Void> addDislike(@PathVariable Integer id, @PathVariable Integer userId) {
+        reviewService.createDislike(id, userId);
         return ResponseEntity.ok().build();
     }
 
-    //Удаление
-    @DeleteMapping("/reviews/{id}/dislike/{userId}")
-    public ResponseEntity<Void> removeDislike(@PathVariable int id, @PathVariable int userId) {
-        reviewService.removeDislike(id, userId);
+    // Удаление дизлайка
+    @DeleteMapping("/{id}/dislike/{userId}")
+    public ResponseEntity<Void> removeDislike(@PathVariable Integer id, @PathVariable Integer userId) {
+        reviewService.deleteDislike(id, userId);
         return ResponseEntity.ok().build();
     }
 }
+

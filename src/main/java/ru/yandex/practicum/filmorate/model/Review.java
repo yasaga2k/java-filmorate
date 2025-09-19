@@ -1,15 +1,19 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class Review {
-    private int reviewId;
-    @NotBlank(message = "Содержание отзыва не может быть пустым")
+
+    private Integer reviewId;
+    @NotNull
     private String content;
-    private boolean isPositive;
-    private int userId;
+    @NotNull
+    private Boolean isPositive;
+    @NotNull
+    private Integer userId;
+    @NotNull
     private int filmId;
-    private int useful; // рейтинг полезности
+    private int useful;
 }
