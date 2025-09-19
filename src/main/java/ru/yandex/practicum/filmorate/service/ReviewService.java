@@ -63,9 +63,11 @@ public class ReviewService {
         }
     }
 
-    public Review findById(int id) {
+
+    public Optional<Review> findById(int id) {
         Optional<Review> optionalReview = reviewStorage.findById(id);
-        return optionalReview.orElse(null);
+        optionalReview.ifPresent(System.out::println);
+        return optionalReview;
     }
 
     public List<Review> findByFilmId(Integer filmId, int count) {

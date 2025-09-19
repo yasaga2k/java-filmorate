@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/reviews")
@@ -43,11 +44,11 @@ public class ReviewController {
     // поиск по id
     @GetMapping("/reviews/{id}")
     public ResponseEntity<Review> getReviewById(@PathVariable int id) {
-        Review review = reviewService.findById(id);
-        if (review == null) {
+        Optional<Review> optionalReview = reviewService.findById(id);
+        if (optionalReview.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(optionalReview.get());
     }
 
     // Получение всех отзывов по идентификатору фильма, если фильм не указан то все. Если кол-во не указано, то 10.
