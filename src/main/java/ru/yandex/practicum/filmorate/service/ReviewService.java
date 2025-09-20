@@ -1,55 +1,75 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
 
 import java.util.List;
-import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,
+        makeFinal = true)
 public class ReviewService {
+    ReviewDbStorage reviewStorage;
+    FilmDbStorage filmDbStorage;
+    UserDbStorage userDbStorage;
 
-    private final ReviewDbStorage reviewStorage;
-
-    public Review save(Review review) {
-        Review reviewCreated = reviewStorage.create(review);
-        return reviewCreated;
+    public Review getReviewById(int id) {
+        return reviewStorage.findById(id).orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден."));
     }
 
-    public Review update(Review review) {
-        Optional<Review> reviewUpdated = reviewStorage.update(review);
-        return reviewUpdated.orElse(null);
+    public Review updateReview(Review review) {
+        validateReview(review.getFilmId(), review.getUserId());
+        return reviewStorage.updateReview(review);
     }
 
-    public void delete(Integer id) {
-        reviewStorage.delete(id);
+    public Review createReview(Review review) {
+        validateReview(review.getFilmId(), review.getUserId());
+        return reviewStorage.createReview(review);
     }
 
-    public Review findById(Integer id) {
-        return reviewStorage.findById(id).orElseThrow(() -> new NotFoundException("Отзыв не найден."));
+    public void deleteReview(int id) {
+        Review review = getReviewById(id); // получаем, чтобы узнать userId
+        reviewStorage.deleteReview(id);
     }
 
-    public List<Review> findAll(Integer filmId, Integer count) {
-        return reviewStorage.findAll(filmId, count);
+    public List<Review> getReviewByFilmId(int filmId, int count) {
+        return reviewStorage.findReviewsByFilm(filmId, count);
     }
 
-    public void createLike(Integer id, Integer userId) {
-        reviewStorage.createLike(id, userId);
+    public void likeReview(int reviewId, int userId, boolean isPositive) {
+        validateLike(reviewId, userId);
+        reviewStorage.addLike(reviewId, userId, isPositive);
     }
 
-    public void createDislike(Integer id, Integer userId) {
-        reviewStorage.createDislike(id, userId);
+    public void removeLike(int reviewId, int userId, boolean isPositive) {
+        validateLike(reviewId, userId);
+        reviewStorage.removeLike(reviewId, userId, isPositive);
     }
 
-    public void deleteLike(Integer id, Integer userId) {
-        reviewStorage.deleteLike(id, userId);
+    private void validateLike(int reviewId, int userId) {
+        if (reviewStorage.findById(reviewId).isEmpty()) {
+            throw new NotFoundException("Отзыв с id " + reviewId + " не найден.");
+        }
+        if (userDbStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден.");
+        }
     }
 
-    public void deleteDislike(Integer id, Integer userId) {
-        reviewStorage.deleteDislike(id, userId);
+    private void validateReview(int filmId, int userId) {
+        if (filmDbStorage.findById(filmId).isEmpty()) {
+            throw new NotFoundException("Фильм с id " + filmId + " не найден.");
+        }
+        if (userDbStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден.");
+        }
     }
 }

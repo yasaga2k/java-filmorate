@@ -1,186 +1,110 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
-import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import ru.yandex.practicum.filmorate.storage.ReviewStorage;
-
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
+@Repository
 @Slf4j
-@Component
-@RequiredArgsConstructor
-public class ReviewDbStorage  implements ReviewStorage {
-    private final JdbcTemplate jdbcTemplate;
+@FieldDefaults(level = AccessLevel.PRIVATE,
+        makeFinal = true)
+public class ReviewDbStorage extends BaseRepository<Review> {
 
-    @Override
-    public Review create(Review review) {
-        if (film(review.getFilmId()) && user(review.getUserId())) {
-            String sqlQuery = "INSERT INTO REVIEWS (CONTENT, IS_POSITIVE, USER_ID, FILM_ID)" +
-                    "values (?, ?, ?, ?)";
+    static String SELECT_REVIEWS = "SELECT * FROM film_reviews ";
 
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            jdbcTemplate.update(connection -> {
-                PreparedStatement stmt = connection.prepareStatement(sqlQuery, new String[]{"REVIEW_ID"});
-                stmt.setString(1, review.getContent());
-                stmt.setBoolean(2, review.getIsPositive());
-                stmt.setInt(3, review.getUserId());
-                stmt.setInt(4, review.getFilmId());
-                return stmt;
-            }, keyHolder);
-            review.setReviewId(Objects.requireNonNull(keyHolder.getKey()).intValue());
-            return review;
-        } else
-            throw new ValidationException("Отзыв не добавлен.");
+    public ReviewDbStorage(JdbcTemplate jdbc, RowMapper<Review> mapper) {
+        super(jdbc, mapper);
     }
 
-    @Override
-    public Optional<Review> update(Review review) {
-        String sqlQuery = "UPDATE REVIEWS SET CONTENT = ?, IS_POSITIVE = ?" +
-                " WHERE REVIEW_ID = ?";
-
-        int result = jdbcTemplate.update(sqlQuery,
-                review.getContent(),
-                review.getIsPositive(),
-                review.getReviewId());
-        if (result == 0)
-            return Optional.empty();
-        return findById(review.getReviewId());
-
+    public Review createReview(Review review) {
+        String sql = "INSERT INTO film_reviews (film_id, USER_ID, CONTENT, IS_POSITIVE, USEFUL) VALUES (?, ?, ?, ?, ?)";
+        long id = insert(sql,
+                review.getFilmId(), review.getUserId(), review.getContent(), review.isPositive(), review.getUseful());
+        review.setReviewId(id);
+        return review;
     }
 
-    @Override
-    public void delete(int id) {
+    public Review updateReview(Review review) {
+        long id = review.getReviewId();
         String sql =
-                "DELETE " +
-                        "FROM REVIEWS " +
-                        "WHERE REVIEW_ID = ?";
-
-        int result = jdbcTemplate.update(sql, id);
-        if (result == 1)
-            log.info("Удалён отзыв id {}", id);
-        else
-            throw new NotFoundException("Отзыв для удаления не найден.");
+                "UPDATE FILM_REVIEWS SET CONTENT = ?, IS_POSITIVE = ?" +
+                        "WHERE ID = ?";
+        if (jdbc.update(sql,
+                review.getContent(),
+                review.isPositive(),
+                id) < 1) {
+            throw new NotFoundException("Отзыв с id " + review.getReviewId() + " не найден.");
+        }
+        return findById(id).get();
     }
 
-    @Override
-    public Optional<Review> findById(int id) {
-        SqlRowSet reviewRows = jdbcTemplate.queryForRowSet("SELECT r.*, " +
-                "SUM(CASE WHEN LR.IS_POSITIVE = TRUE THEN 1 WHEN LR.IS_POSITIVE = FALSE THEN -1 ELSE 0 END) AS USE " +
-                "FROM REVIEWS AS r " + "LEFT JOIN LIKE_REVIEW as LR on r.REVIEW_ID = LR.REVIEW_ID " +
-                " WHERE r.REVIEW_ID = ? GROUP BY r.REVIEW_ID", id);
-        if (reviewRows.next()) {
-            return Optional.of(reviewRows(reviewRows));
-        } else log.info("Фильм с идентификатором {} не найден.", id);
-        return Optional.empty();
+    public void deleteReview(int id) {
+        String sql = "DELETE FROM film_reviews WHERE ID = ?";
+        jdbc.update(sql, id);
     }
 
-    @Override
-    public List<Review> findAll(int filmId, int count) {
-        String where = "";
-        if (filmId != 0) where = "WHERE FILM_ID = " + filmId;
-        String sql = "SELECT r.*, " +
-                "SUM(CASE WHEN LR.IS_POSITIVE = TRUE THEN 1 WHEN LR.IS_POSITIVE = FALSE THEN -1 ELSE 0 END) AS USE " +
-                "FROM REVIEWS AS r " +
-                "LEFT JOIN LIKE_REVIEW as LR on r.REVIEW_ID = LR.REVIEW_ID " + where +
-                " GROUP BY r.REVIEW_ID " + " ORDER BY USE DESC" +
-                " LIMIT " + count;
-        return jdbcTemplate.query(sql, (rs, rowNum) -> makeReview(rs));
+    public List<Review> findReviewsByFilm(int filmId, int count) {
+        if (filmId != -1) {
+            String sql =
+                    "SELECT * FROM film_reviews " +
+                            "WHERE FILM_ID = ? " +
+                            "ORDER BY USEFUL DESC LIMIT ?";
+            return jdbc.query(sql, mapper, filmId, count);
+        }
+        String sql = "SELECT * FROM film_reviews ORDER BY USEFUL DESC LIMIT ?";
+        return jdbc.query(sql, mapper, count);
+
+
     }
 
-    private Review makeReview(ResultSet rs) throws SQLException {
-        return new Review(rs.getInt("REVIEW_ID"),
-                rs.getString("CONTENT"),
-                rs.getBoolean("IS_POSITIVE"),
-                rs.getInt("USER_ID"),
-                rs.getInt("FILM_ID"),
-                rs.getInt("USE"));
+    public Optional<Review> findById(long id) {
+        String sql = SELECT_REVIEWS + "WHERE id = ?";
+        return findOne(sql, id);
     }
 
-    private Review reviewRows(SqlRowSet rs) {
-        return new Review(rs.getInt("REVIEW_ID"),
-                rs.getString("CONTENT"),
-                rs.getBoolean("IS_POSITIVE"),
-                rs.getInt("USER_ID"),
-                rs.getInt("FILM_ID"),
-                rs.getInt("USE"));
+    public boolean likeExistsById(int reviewId, int userId) {
+        String sql = "SELECT COUNT(*) AS count FROM reviews_likes WHERE review_id = ? AND user_id = ?";
+        Integer count = jdbc.queryForObject(sql, Integer.class, reviewId, userId);
+        return count > 0;
     }
 
-    private boolean film(Integer id) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * " +
-                "FROM FILMS " +
-                "WHERE FILM_ID = ?", id);
-        if (filmRows.next()) {
-            return true;
-        } else log.info("Фильм с идентификатором {} не найден.", id);
-        if (id == 0) {
-            throw new ValidationException("У фильма не может быть id = 0.");
-        } else
-            throw new NotFoundException("Фильм не найден.");
+    public void addLike(int reviewId, int userId, boolean positive) {
+        String sql;
+        int amount;
+
+        if (likeExistsById(reviewId, userId)) {
+            sql = "UPDATE reviews_likes SET is_positive = ? WHERE review_id = ? AND user_id = ?";
+            amount = positive ? 2 : -2;
+            update(sql, positive, reviewId, userId);
+        } else {
+            sql = "INSERT INTO reviews_likes (review_id, user_id, is_positive) VALUES (?, ?, ?)";
+            amount = positive ? 1 : -1;
+            update(sql, reviewId, userId, positive);
+        }
+
+        updateUseful(reviewId, amount);
     }
 
-    private boolean user(int id) {
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * " +
-                "FROM USERS " +
-                "WHERE USER_ID = ?", id);
-        if (userRows.next()) {
-            return true;
-        } else log.info("Пользователь с идентификатором {} не найден.", id);
-        throw new NotFoundException("Пользователь не найден.");
+    public void removeLike(int reviewId, int userId, boolean positive) {
+        if (likeExistsById(reviewId, userId)) {
+            String sql = "DELETE FROM reviews_likes WHERE review_id = ? AND user_id = ? AND is_positive = ?";
+            jdbc.update(sql, reviewId, userId, positive);
+            int amount = positive ? -1 : 1;
+            updateUseful(reviewId, amount);
+        }
+
     }
 
-    @Override
-    public void createLike(int id, int userId) {
-        String sqlQuery = "INSERT " +
-                "INTO like_review (review_id, user_id, is_positive) " +
-                "VALUES (?, ?, TRUE)";
-
-        jdbcTemplate.update(sqlQuery, id, userId);
-    }
-
-    @Override
-    public void createDislike(int id, int userId) {
-        String sqlQuery = "INSERT " +
-                "INTO like_review (review_id, user_id, is_positive) " +
-                "VALUES (?, ?, FALSE)";
-
-        jdbcTemplate.update(sqlQuery, id, userId);
-    }
-
-    @Override
-    public void deleteLike(int id, int userId) {
-        String sqlQuery = "DELETE " +
-                "FROM like_review " +
-                "WHERE review_id = ? " +
-                "AND user_id = ? " +
-                "AND is_positive = TRUE";
-
-        jdbcTemplate.update(sqlQuery, id, userId);
-    }
-
-    @Override
-    public void deleteDislike(int id, int userId) {
-        String sqlQuery = "DELETE " +
-                "FROM like_review " +
-                "WHERE review_id = ? " +
-                "AND user_id = ? " +
-                "AND is_positive = FALSE";
-
-        jdbcTemplate.update(sqlQuery, id, userId);
+    private void updateUseful(int reviewId, int amount) {
+        String sql = "UPDATE film_reviews SET USEFUL = USEFUL + ? WHERE ID = ?";
+        jdbc.update(sql, amount, reviewId);
     }
 }
-
-
