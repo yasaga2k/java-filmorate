@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -17,6 +19,12 @@ public class FilmsLikesDbStorage {
 
     private static final String GET_LIKES_BY_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
 
+    private static final String GET_LIKES_BY_USER_SQL = "SELECT film_id FROM films_likes WHERE user_id = ?";
+
+    private static final String GET_ALL_USERS_WITH_LIKES_SQL = "SELECT DISTINCT user_id FROM films_likes";
+
+    private static final String GET_ALL_LIKES_SQL = "SELECT film_id, user_id FROM films_likes";
+
     public void addLike(int filmId, int userId) {
         jdbcTemplate.update(ADD_LIKE_SQL, filmId, userId);
     }
@@ -29,5 +37,25 @@ public class FilmsLikesDbStorage {
         return Set.copyOf(jdbcTemplate.query(GET_LIKES_BY_FILM_SQL,
                 (rs, rowNum) -> rs.getInt("user_id"),
                 filmId));
+    }
+
+    //Получаем все фильмы, которые лайкнул пользователь
+    public Set<Integer> getLikesByUserId(int userId) {
+        return Set.copyOf(jdbcTemplate.query(GET_LIKES_BY_USER_SQL,
+                (rs, rowNum) -> rs.getInt("film_id"),
+                userId));
+    }
+
+    //Получаем всех пользователей, которые хотя бы раз поставили лайк
+    public Set<Integer> getAllUsersWithLikes() {
+        return Set.copyOf(jdbcTemplate.query(GET_ALL_USERS_WITH_LIKES_SQL,
+                (rs, rowNum) -> rs.getInt("user_id")));
+    }
+
+    //Полусаем все лайки
+    public List<Map<String, Integer>> getAllLikes() {
+        return jdbcTemplate.query(GET_ALL_LIKES_SQL, (rs, rowNum) ->
+                Map.of("filmId", rs.getInt("film_id"),
+                        "userId", rs.getInt("user_id")));
     }
 }
