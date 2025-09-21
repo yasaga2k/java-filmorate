@@ -327,11 +327,11 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Film> getCommon(int userId, int friendId) {
-        String getFilmsUser = "SELECT DISTINCT f.* ,m.name AS mpa_name" +
-                " FROM likes AS l" +
-                " INNER JOIN films AS f ON l.film_id=f.film_id" +
-                " LEFT JOIN mpa_rating m ON f.rating_id = m.rating_id" +
-                " WHERE l.user_id=?";
+        String getFilmsUser = "SELECT DISTINCT f.*, m.name AS mpa_name " +
+                "FROM films_likes AS l " +
+                "INNER JOIN films AS f ON l.film_id = f.id " +
+                "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id " +
+                "WHERE l.user_id=?";
         ;
         List<Film> userFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, userId);
         List<Film> friendFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, friendId);
