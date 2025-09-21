@@ -61,6 +61,13 @@ public class FilmController {
         return filmService.getPopularFilms(count, genreId, year);
     }
 
+    @GetMapping("/common")
+    public List<Film> getAllFilmsCommonWithFriend(@RequestParam int userId,
+                                                  @RequestParam int friendId) {
+        return filmService.getAllFilmsCommon(userId, friendId);
+    }
+
+
     @GetMapping("/{id}/mpa")
     public MpaRating getFilmMpa(@PathVariable int id) {
         Film film = filmService.findById(id);

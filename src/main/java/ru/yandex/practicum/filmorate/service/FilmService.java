@@ -138,4 +138,8 @@ public class FilmService {
         filmStorage.delete(id);
         log.info("Фильм с ID={} удален", id);
     }
+
+    public List<Film> getAllFilmsCommon(int userId, int friendId) {
+        return filmStorage.getCommon(userId, friendId);
+    }
 }

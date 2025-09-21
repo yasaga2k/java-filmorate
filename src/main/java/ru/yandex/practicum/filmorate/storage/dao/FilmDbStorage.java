@@ -173,7 +173,7 @@ public class FilmDbStorage implements FilmStorage {
             return stmt;
         }, keyHolder);
 
-        film.setId(keyHolder.getKey().intValue());
+        film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
         saveGenres(film);
         saveDirectors(film);
         return film;
@@ -219,12 +219,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilmsFromDirector(int directorId) {
         List<Integer> filmIds = jdbcTemplate.queryForList(GET_ALL_FILMS_ID_WITH_DIRECTOR, Integer.class, directorId);
-        List<Film> films = filmIds.stream()
-                .map(id -> findById(id))
+        return filmIds.stream()
+                .map(this::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-        return films;
     }
 
     private void saveGenres(Film film) {
@@ -325,5 +324,22 @@ public class FilmDbStorage implements FilmStorage {
         });
 
         films.forEach(film -> film.setLikes(filmLikesMap.getOrDefault(film.getId(), new HashSet<>())));
+    }
+
+    public List<Film> getCommon(int userId, int friendId) {
+        String getFilmsUser = "SELECT DISTINCT f.* ,m.name AS mpa_name" +
+                " FROM likes AS l" +
+                " INNER JOIN films AS f ON l.film_id=f.film_id" +
+                " LEFT JOIN mpa_rating m ON f.rating_id = m.rating_id" +
+                " WHERE l.user_id=?";
+        ;
+        List<Film> userFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, userId);
+        List<Film> friendFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, friendId);
+        Set<Integer> list2Ids = friendFilms.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+        return userFilms.stream()
+                .filter(film -> list2Ids.contains(film.getId()))
+                .collect(Collectors.toList());
     }
 }
