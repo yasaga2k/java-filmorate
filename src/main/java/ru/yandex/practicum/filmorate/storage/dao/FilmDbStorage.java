@@ -332,14 +332,20 @@ public class FilmDbStorage implements FilmStorage {
                 "INNER JOIN films AS f ON l.film_id = f.id " +
                 "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id " +
                 "WHERE l.user_id=?";
-        ;
+
         List<Film> userFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, userId);
         List<Film> friendFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, friendId);
+
         Set<Integer> list2Ids = friendFilms.stream()
                 .map(Film::getId)
                 .collect(Collectors.toSet());
-        return userFilms.stream()
+
+        List<Film> commonFilms = userFilms.stream()
                 .filter(film -> list2Ids.contains(film.getId()))
                 .collect(Collectors.toList());
+
+        loadGenresForFilms(commonFilms); // Загружаю жанры для общих фильмов
+
+        return commonFilms;
     }
 }
