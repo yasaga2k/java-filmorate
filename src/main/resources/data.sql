@@ -12,3 +12,13 @@ MERGE INTO genres (id, name) VALUES
 (4, 'Триллер'),
 (5, 'Документальный'),
 (6, 'Боевик');
+
+INSERT INTO event_types (name) VALUES
+('LIKE'),
+('REVIEW'),
+('FRIEND');
+
+INSERT INTO operations (name) VALUES
+ ('ADD'),
+ ('REMOVE'),
+ ('UPDATE');
