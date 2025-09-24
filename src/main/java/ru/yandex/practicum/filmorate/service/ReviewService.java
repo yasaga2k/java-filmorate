@@ -22,10 +22,10 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE,
         makeFinal = true)
 public class ReviewService {
-    private static ReviewDbStorage reviewStorage;
-    private static FilmDbStorage filmDbStorage;
-    private static UserDbStorage userDbStorage;
-    private static FeedEventsDbStorage feedEventsDbStorage;
+    ReviewDbStorage reviewStorage;
+    FilmDbStorage filmDbStorage;
+    UserDbStorage userDbStorage;
+    FeedEventsDbStorage feedEventsDbStorage;
 
     public Review getReviewById(int id) {
         return reviewStorage.findById(id).orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден."));
