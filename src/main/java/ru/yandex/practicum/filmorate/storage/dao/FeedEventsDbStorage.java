@@ -34,7 +34,6 @@ public class FeedEventsDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
     public void save(FeedEvents event) {
-
         jdbcTemplate.update(SAVE,
                 event.getTimestamp(),
                 event.getUserId(),
@@ -45,8 +44,6 @@ public class FeedEventsDbStorage {
     }
 
     public List<FeedEvents> findByUserId(long userId) {
-
-
         return jdbcTemplate.query(FIND_BY_USER_ID, (rs, rowNum) -> {
             FeedEvents event = new FeedEvents();
             event.setEventId(rs.getInt("event_id"));
