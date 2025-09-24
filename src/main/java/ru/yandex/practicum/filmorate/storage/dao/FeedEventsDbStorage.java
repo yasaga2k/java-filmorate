@@ -26,10 +26,8 @@ public class FeedEventsDbStorage {
             """;
     private static final String SAVE = """
             INSERT INTO feed_events (event_time, user_id, event_type_id, operation_id, entity_id)
-            VALUES (?, ?, 
-                   (SELECT id FROM event_types WHERE name = ?),
-                   (SELECT id FROM operations WHERE name = ?),
-                   ?)
+            VALUES (?, ?, (SELECT id FROM event_types WHERE name = ?),
+                   (SELECT id FROM operations WHERE name = ?), ?)
             """;
     private final JdbcTemplate jdbcTemplate;
 
