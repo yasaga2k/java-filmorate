@@ -326,6 +326,7 @@ public class FilmDbStorage implements FilmStorage {
         films.forEach(film -> film.setLikes(filmLikesMap.getOrDefault(film.getId(), new HashSet<>())));
     }
 
+    //Поиск совместного фильма
     public List<Film> getCommon(int userId, int friendId) {
         String getFilmsUser = "SELECT DISTINCT f.*, m.name AS mpa_name " +
                 "FROM films_likes AS l " +
