@@ -94,7 +94,13 @@ public class FilmService {
         userService.findById(userId); // Проверяем существование пользователя
         filmsLikesDbStorage.addLike(filmId, userId);
         log.info("Лайк добавлен. Фильм ID={}, Пользователь ID={}", filmId, userId);
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), userId, new EventType("LIKE"), new Operation("ADD"), filmId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "ADD",
+                filmId));
     }
 
     public void removeLike(int filmId, int userId) {
@@ -102,7 +108,13 @@ public class FilmService {
         userService.findById(userId);
         filmsLikesDbStorage.removeLike(filmId, userId);
         log.info("Лайк удален. Фильм ID={}, Пользователь ID={}", filmId, userId);
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), userId, new EventType("LIKE"), new Operation("REMOVE"), filmId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "REMOVE",
+                filmId));
     }
 
     public List<Film> getPopularFilms(int count) {

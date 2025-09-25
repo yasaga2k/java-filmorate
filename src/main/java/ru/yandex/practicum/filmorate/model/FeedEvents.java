@@ -14,9 +14,9 @@ public class FeedEvents {
 
     private int userId;
 
-    private EventType eventType;
+    private String eventType;
 
-    private Operation operation;
+    private String operation;
 
     private int entityId;
 }

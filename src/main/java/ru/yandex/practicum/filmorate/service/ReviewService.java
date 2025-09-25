@@ -3,11 +3,10 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.FeedEvents;
-import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.dao.FeedEventsDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
@@ -17,6 +16,7 @@ import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
 import java.util.List;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE,
@@ -33,20 +33,45 @@ public class ReviewService {
 
     public Review updateReview(Review review) {
         validateReview(review.getFilmId(), review.getUserId());
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), review.getUserId(), new EventType("REVIEW"), new Operation("UPDATE"), review.getReviewId().intValue()));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                review.getUserId(),
+                "REVIEW",
+                "UPDATE",
+                review.getReviewId().intValue()));
         return reviewStorage.updateReview(review);
     }
 
     public Review createReview(Review review) {
         validateReview(review.getFilmId(), review.getUserId());
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), review.getUserId(), new EventType("REVIEW"), new Operation("ADD"), review.getReviewId().intValue()));
-        return reviewStorage.createReview(review);
+
+        Review savedReview = reviewStorage.createReview(review); // now it has an ID
+
+        FeedEvents feedEvents = new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                savedReview.getUserId(),
+                "REVIEW",
+                "ADD",
+                savedReview.getReviewId().intValue());
+
+        feedEventsDbStorage.save(feedEvents);
+
+        return savedReview;
     }
+
 
     public void deleteReview(int id) {
         Review review = getReviewById(id); // получаем, чтобы узнать userId
         reviewStorage.deleteReview(id);
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), review.getUserId(), new EventType("REVIEW"), new Operation("REMOVE"), review.getReviewId().intValue()));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                review.getUserId(),
+                "REVIEW",
+                "REMOVE",
+                review.getReviewId().intValue()));
     }
 
     public List<Review> getReviewByFilmId(int filmId, int count) {
@@ -56,14 +81,26 @@ public class ReviewService {
     public void likeReview(int reviewId, int userId, boolean isPositive) {
         validateLike(reviewId, userId);
         reviewStorage.addLike(reviewId, userId, isPositive);
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), userId, new EventType("LIKE"), new Operation("ADD"), reviewId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "ADD",
+                reviewId));
 
     }
 
     public void removeLike(int reviewId, int userId, boolean isPositive) {
         validateLike(reviewId, userId);
         reviewStorage.removeLike(reviewId, userId, isPositive);
-        feedEventsDbStorage.save(new FeedEvents(1, System.currentTimeMillis(), userId, new EventType("LIKE"), new Operation("REMOVE"), reviewId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "REMOVE",
+                reviewId));
 
     }
 
