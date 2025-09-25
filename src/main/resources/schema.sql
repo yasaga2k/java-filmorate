@@ -85,3 +85,24 @@ CREATE TABLE IF NOT EXISTS reviews_likes(
     FOREIGN KEY (review_id) REFERENCES film_reviews (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS event_types (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(20) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS operations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(20) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS feed_events (
+    event_id INT PRIMARY KEY AUTO_INCREMENT,
+    event_time BIGINT NOT NULL,
+    user_id INT NOT NULL,
+    event_type_id INT NOT NULL,
+    operation_id INT NOT NULL,
+    entity_id INT NOT NULL,
+    CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_types(id),
+    CONSTRAINT fk_operation FOREIGN KEY (operation_id) REFERENCES operations(id)
+);

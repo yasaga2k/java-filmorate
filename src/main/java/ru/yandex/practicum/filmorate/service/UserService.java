@@ -5,21 +5,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.FeedEvents;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
-import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.model.Friendship;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FeedEventsDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.HashMap;
 
 @Service
 @Slf4j
@@ -31,6 +29,7 @@ public class UserService {
     private final FriendshipDbStorage friendshipDbStorage;
     private final FriendshipStorage friendshipStorage;
     private final FilmsLikesDbStorage filmsLikesDbStorage;
+    private final FeedEventsDbStorage feedEventsDbStorage;
 
     @Qualifier("filmDbStorage")
     private final FilmStorage filmStorage;
@@ -74,6 +73,20 @@ public class UserService {
         // Односторонняя дружба - только пользователь добавляет друга
         friendshipDbStorage.add(new Friendship(userId, friendId, true));
         log.info("Пользователь {} добавил пользователя {} в друзья", userId, friendId);
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "FRIEND",
+                "ADD",
+                friendId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                friendId,
+                "FRIEND",
+                "ADD",
+                userId));
     }
 
     public void removeFriend(int userId, int friendId) {
@@ -82,6 +95,20 @@ public class UserService {
 
         friendshipDbStorage.delete(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
         log.info("Пользователь {} удалил пользователя {} из друзей", userId, friendId);
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "FRIEND",
+                "REMOVE",
+                friendId));
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                friendId,
+                "FRIEND",
+                "REMOVE",
+                userId));
     }
 
     public List<User> getFriends(int userId) {
@@ -180,4 +207,17 @@ public class UserService {
         userStorage.delete(id);
         log.info("Пользователь с ID={} удален", id);
     }
+
+    public List<FeedEvents> getFeedEvents(int id) {
+        User user = findById(id);
+        List<User> friends = getFriends(id);
+        List<FeedEvents> feedEvents = new ArrayList<>();
+        for (User fr : friends) {
+            feedEvents.addAll(feedEventsDbStorage.findByUserId(fr.getId()));
+        }
+        feedEvents.addAll(feedEventsDbStorage.findByUserId(id));
+        return feedEvents;
+
+    }
+
 }

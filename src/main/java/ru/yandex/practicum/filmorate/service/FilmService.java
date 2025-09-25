@@ -6,15 +6,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Director;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.storage.dao.FeedEventsDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import java.util.Comparator;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +29,7 @@ public class FilmService {
     private final MpaService mpaService;
     private final GenreService genreService;
     private final DirectorService directorService;
+    private final FeedEventsDbStorage feedEventsDbStorage;
 
     public List<Film> findAll() {
         return filmStorage.findAll();
@@ -95,6 +94,13 @@ public class FilmService {
         userService.findById(userId); // Проверяем существование пользователя
         filmsLikesDbStorage.addLike(filmId, userId);
         log.info("Лайк добавлен. Фильм ID={}, Пользователь ID={}", filmId, userId);
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "ADD",
+                filmId));
     }
 
     public void removeLike(int filmId, int userId) {
@@ -102,6 +108,13 @@ public class FilmService {
         userService.findById(userId);
         filmsLikesDbStorage.removeLike(filmId, userId);
         log.info("Лайк удален. Фильм ID={}, Пользователь ID={}", filmId, userId);
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "LIKE",
+                "REMOVE",
+                filmId));
     }
 
     public List<Film> getPopularFilms(int count) {
