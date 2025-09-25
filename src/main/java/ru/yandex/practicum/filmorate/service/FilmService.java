@@ -147,7 +147,9 @@ public class FilmService {
                     .collect(Collectors.toList());
         } else if (sortBy.equals("likes")) {
             return films.stream()
-                    .sorted(Comparator.comparingInt((Film f) -> -f.getLikes().size()))
+                    .sorted(Comparator
+                            .comparingInt((Film f) -> f.getLikes().size()).reversed()
+                            .thenComparingInt(Film::getId))
                     .collect(Collectors.toList());
         }
 

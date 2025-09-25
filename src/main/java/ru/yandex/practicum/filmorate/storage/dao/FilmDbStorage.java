@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Primary
+@Slf4j
 @RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private static final String FIND_ALL_SQL = "SELECT f.*, m.name as mpa_name FROM films f " +
@@ -48,7 +50,8 @@ public class FilmDbStorage implements FilmStorage {
             """;
     private static final String GET_ALL_FILMS_ID_WITH_DIRECTOR = "SELECT f.id FROM films f " +
             "LEFT JOIN directors_of_films df ON f.id = df.film_id " +
-            "WHERE  df.director_id = ?;";
+            "WHERE  df.director_id = ?" +
+            ";";
 
     private static final String FIND_POPULAR_FILMS_BY_YEAR_SQL = """
                 SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
@@ -150,6 +153,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(FIND_ALL_SQL, this::mapRowToFilm);
         loadGenresForFilms(films);
         loadLikesForFilms(films);
+        loadDirectorsForFilms(films);
         return films;
     }
 
@@ -231,6 +235,7 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId());
 
         jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
+        jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
         saveGenres(film);
         saveDirectors(film);
         return film;
@@ -316,21 +321,23 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void saveDirectors(Film film) {
-        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
-            jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
+        jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
 
-            List<Director> sortedDirectors = film.getDirectors().stream()
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            film.getDirectors().stream()
                     .distinct()
                     .sorted(Comparator.comparingInt(Director::getId))
-                    .toList();
+                    .forEach(director -> jdbcTemplate.update(INSERT_DIRECTORS_SQL, film.getId(), director.getId()));
 
-            for (Director director : sortedDirectors) {
-                jdbcTemplate.update(INSERT_DIRECTORS_SQL, film.getId(), director.getId());
-            }
-
-            film.setDirectors(new LinkedHashSet<>(sortedDirectors));
+            film.setDirectors(new LinkedHashSet<>(film.getDirectors()));
+        } else {
+            film.setDirectors(new LinkedHashSet<>());
         }
+
+        log.info("Directors updated for film {}: {}", film.getId(), film.getDirectors());
+
     }
+
 
     private void loadGenresForFilm(Film film) {
         List<Genre> genres = jdbcTemplate.query(LOAD_GENRES_FOR_FILM_SQL,

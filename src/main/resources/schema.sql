@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS films (
 );
 
 CREATE TABLE IF NOT EXISTS directors_of_films (
-    director_id INTEGER,
     film_id INTEGER,
+    director_id INTEGER,
     PRIMARY KEY (film_id, director_id),
     FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
     FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE
