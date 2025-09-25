@@ -196,6 +196,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, params);
         loadGenresForFilms(films);
         loadLikesForFilms(films);
+        loadDirectorsForFilms(films);
         return films;
     }
 
@@ -254,7 +255,8 @@ public class FilmDbStorage implements FilmStorage {
             film.setMpa(new MpaRating(mpaId, mpaName));
         }
 
-        film.setDirectors(Collections.emptySet());
+        film.setDirectors(new LinkedHashSet<>());
+        film.setGenres(new LinkedHashSet<>());
 
         return film;
     }
@@ -281,7 +283,7 @@ public class FilmDbStorage implements FilmStorage {
             films = jdbcTemplate.query(SEARCH_BY_TITLE_SQL, this::mapRowToFilm, searchPattern);
         } else if (searchByDirector) {
             films = jdbcTemplate.query(SEARCH_BY_DIRECTOR_SQL, this::mapRowToFilm, searchPattern);
-        } else { // Если ни один параметр не задан, возвращаем пустой список
+        } else {
             return List.of();
         }
 
@@ -348,6 +350,9 @@ public class FilmDbStorage implements FilmStorage {
     private void loadDirectorsForFilms(List<Film> films) {
         if (films.isEmpty()) return;
 
+        Map<Integer, Film> filmMap = films.stream()
+                .collect(Collectors.toMap(Film::getId, f -> f));
+
         String filmIds = films.stream()
                 .map(f -> String.valueOf(f.getId()))
                 .collect(Collectors.joining(","));
@@ -358,14 +363,12 @@ public class FilmDbStorage implements FilmStorage {
             int filmId = rs.getInt("film_id");
             Director director = new Director(rs.getInt("id"), rs.getString("name"));
 
-            for (Film film : films) {
-                if (film.getId() == filmId) {
-                    if (film.getDirectors() == null || film.getDirectors().isEmpty()) {
-                        film.setDirectors(new LinkedHashSet<>());
-                    }
-                    film.getDirectors().add(director);
-                    break;
+            Film film = filmMap.get(filmId);
+            if (film != null) {
+                if (film.getDirectors() == null) {
+                    film.setDirectors(new LinkedHashSet<>());
                 }
+                film.getDirectors().add(director);
             }
         });
     }

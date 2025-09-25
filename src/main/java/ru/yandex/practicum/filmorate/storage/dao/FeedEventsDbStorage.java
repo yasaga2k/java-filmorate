@@ -23,6 +23,7 @@ public class FeedEventsDbStorage {
             JOIN event_types et ON f.event_type_id = et.id
             JOIN operations o ON f.operation_id = o.id
             WHERE f.user_id = ?
+            ORDER BY f.event_time ASC
             """;
     private static final String SAVE = """
             INSERT INTO feed_events

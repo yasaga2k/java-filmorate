@@ -210,14 +210,6 @@ public class UserService {
 
     public List<FeedEvents> getFeedEvents(int id) {
         User user = findById(id);
-        List<User> friends = getFriends(id);
-        List<FeedEvents> feedEvents = new ArrayList<>();
-        for (User fr : friends) {
-            feedEvents.addAll(feedEventsDbStorage.findByUserId(fr.getId()));
-        }
-        feedEvents.addAll(feedEventsDbStorage.findByUserId(id));
-        return feedEvents;
-
+        return feedEventsDbStorage.findByUserId(id);
     }
-
 }

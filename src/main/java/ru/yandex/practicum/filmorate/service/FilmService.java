@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -60,29 +61,31 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        findById(film.getId());
+        Film existingFilm = findById(film.getId());
 
         if (film.getMpa() != null) {
             MpaRating mpa = mpaService.findById(film.getMpa().id());
             film.setMpa(mpa);
         }
 
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                genreService.findById(genre.id());
-            }
-
-            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
-            film.setGenres(uniqueGenres);
-        }
-
-        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+        if (film.getDirectors() == null) {
+            film.setDirectors(existingFilm.getDirectors());
+        } else if (!film.getDirectors().isEmpty()) {
             for (Director director : film.getDirectors()) {
                 directorService.findById(director.getId());
             }
-
             Set<Director> directors = new LinkedHashSet<>(film.getDirectors());
             film.setDirectors(directors);
+        }
+
+        if (film.getGenres() == null) {
+            film.setGenres(existingFilm.getGenres());
+        } else if (!film.getGenres().isEmpty()) {
+            for (Genre genre : film.getGenres()) {
+                genreService.findById(genre.id());
+            }
+            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
+            film.setGenres(uniqueGenres);
         }
 
         Film updatedFilm = filmStorage.update(film);
@@ -135,12 +138,17 @@ public class FilmService {
 
     public List<Film> getFilmsByDirector(int id, String sortBy) {
         directorService.findById(id);
+
+        List<Film> films = filmStorage.getAllFilmsFromDirector(id);
+
         if (sortBy.equals("year")) {
-            List<Film> films = filmStorage.getAllFilmsFromDirector(id);
-            return films.stream().sorted(Comparator.comparing(Film::getReleaseDate)).toList();
+            return films.stream()
+                    .sorted(Comparator.comparing(Film::getReleaseDate))
+                    .collect(Collectors.toList());
         } else if (sortBy.equals("likes")) {
-            List<Film> films = filmStorage.getAllFilmsFromDirector(id);
-            return films.stream().sorted(Comparator.comparingInt((Film f) -> -f.getLikes().size())).toList();
+            return films.stream()
+                    .sorted(Comparator.comparingInt((Film f) -> -f.getLikes().size()))
+                    .collect(Collectors.toList());
         }
 
         throw new IllegalArgumentException("неправильный параметр sortBy " + sortBy);
