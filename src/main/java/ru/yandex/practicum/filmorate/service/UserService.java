@@ -69,32 +69,22 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         User user = findById(userId);
         User friend = findById(friendId);
-
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                user.getId(),
+                "FRIEND",
+                "ADD",
+                friend.getId()));
         // Односторонняя дружба - только пользователь добавляет друга
         friendshipDbStorage.add(new Friendship(userId, friendId, true));
         log.info("Пользователь {} добавил пользователя {} в друзья", userId, friendId);
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                userId,
-                "FRIEND",
-                "ADD",
-                friendId));
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                friendId,
-                "FRIEND",
-                "ADD",
-                userId));
+
     }
 
     public void removeFriend(int userId, int friendId) {
         findById(userId);
         findById(friendId);
-
-        friendshipDbStorage.delete(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
-        log.info("Пользователь {} удалил пользователя {} из друзей", userId, friendId);
         feedEventsDbStorage.save(new FeedEvents(
                 1,
                 System.currentTimeMillis(),
@@ -102,13 +92,9 @@ public class UserService {
                 "FRIEND",
                 "REMOVE",
                 friendId));
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                friendId,
-                "FRIEND",
-                "REMOVE",
-                userId));
+        friendshipDbStorage.delete(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
+        log.info("Пользователь {} удалил пользователя {} из друзей", userId, friendId);
+
     }
 
     public List<User> getFriends(int userId) {

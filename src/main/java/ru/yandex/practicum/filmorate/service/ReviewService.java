@@ -33,14 +33,15 @@ public class ReviewService {
 
     public Review updateReview(Review review) {
         validateReview(review.getFilmId(), review.getUserId());
+        Review reviewUpdated = reviewStorage.updateReview(review);
         feedEventsDbStorage.save(new FeedEvents(
                 1,
                 System.currentTimeMillis(),
-                review.getUserId(),
+                reviewUpdated.getUserId(),
                 "REVIEW",
                 "UPDATE",
-                review.getReviewId().intValue()));
-        return reviewStorage.updateReview(review);
+                reviewUpdated.getReviewId().intValue()));
+        return reviewUpdated;
     }
 
     public Review createReview(Review review) {
@@ -64,7 +65,6 @@ public class ReviewService {
 
     public void deleteReview(int id) {
         Review review = getReviewById(id); // получаем, чтобы узнать userId
-        reviewStorage.deleteReview(id);
         feedEventsDbStorage.save(new FeedEvents(
                 1,
                 System.currentTimeMillis(),
@@ -72,6 +72,7 @@ public class ReviewService {
                 "REVIEW",
                 "REMOVE",
                 review.getReviewId().intValue()));
+        reviewStorage.deleteReview(id);
     }
 
     public List<Review> getReviewByFilmId(int filmId, int count) {
@@ -81,27 +82,11 @@ public class ReviewService {
     public void likeReview(int reviewId, int userId, boolean isPositive) {
         validateLike(reviewId, userId);
         reviewStorage.addLike(reviewId, userId, isPositive);
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                userId,
-                "LIKE",
-                "ADD",
-                reviewId));
-
     }
 
     public void removeLike(int reviewId, int userId, boolean isPositive) {
         validateLike(reviewId, userId);
         reviewStorage.removeLike(reviewId, userId, isPositive);
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                userId,
-                "LIKE",
-                "REMOVE",
-                reviewId));
-
     }
 
     private void validateLike(int reviewId, int userId) {

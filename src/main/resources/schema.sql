@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS feed_events (
     event_type_id INT NOT NULL,
     operation_id INT NOT NULL,
     entity_id INT NOT NULL,
-    CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_types(id),
-    CONSTRAINT fk_operation FOREIGN KEY (operation_id) REFERENCES operations(id)
+    CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_types(id) ON DELETE CASCADE,
+    CONSTRAINT fk_operation FOREIGN KEY (operation_id) REFERENCES operations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id)  ON DELETE CASCADE
 );
