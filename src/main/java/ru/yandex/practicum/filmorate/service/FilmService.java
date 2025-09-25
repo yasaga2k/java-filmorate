@@ -152,6 +152,11 @@ public class FilmService {
         log.info("Фильм с ID={} удален", id);
     }
 
+
+    public List<Film> getAllFilmsCommon(int userId, int friendId) {
+        return filmStorage.getCommon(userId, friendId);
+    }
+
     public List<Film> searchFilms(String query, String by) {
         String searchQuery = query.toLowerCase();
         String[] searchBy = by.split(",");

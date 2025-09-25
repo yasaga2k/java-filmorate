@@ -45,6 +45,10 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getCommon(int userId, int friendId) {
+        return List.of();
+    }
+
     public List<Film> searchFilms(String query, boolean searchByTitle, boolean searchByDirector) {
         String searchQuery = query.toLowerCase();
 
