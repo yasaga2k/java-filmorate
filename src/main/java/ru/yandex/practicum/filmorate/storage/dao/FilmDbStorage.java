@@ -234,21 +234,38 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().id(),
                 film.getId());
 
-        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
-            saveDirectors(film);
+        if (film.getDirectors() != null) {
+            if (!film.getDirectors().isEmpty()) {
+                updateDirectors(film.getDirectors(), film.getId());
+            } else {
+                clearDirectors(film.getId());
+                film.setDirectors(new HashSet<>());
+            }
         } else {
-            jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
+            clearDirectors(film.getId());
             film.setDirectors(new HashSet<>());
         }
 
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            saveGenres(film);
-        } else {
-            jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
-            film.setGenres(new HashSet<>());
-        }
+        // Логика для жанров остаётся без изменений
+        jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
+        saveGenres(film);
 
         return film;
+    }
+
+    private void updateDirectors(Set<Director> directors, Integer idFilm) {
+        if (!directors.isEmpty()) {
+            clearDirectors(idFilm);
+            final String setFilmDirectors = "INSERT INTO film_directors (film_id, director_id) VALUES(?, ?)";
+            for (Director director : directors) {
+                jdbcTemplate.update(setFilmDirectors, idFilm, director.getId());
+            }
+        }
+    }
+
+    private void clearDirectors(Integer id) {
+        String deleteDirectorsForFilm = "DELETE FROM film_directors WHERE film_id=?";
+        jdbcTemplate.update(deleteDirectorsForFilm, id);
     }
 
 
