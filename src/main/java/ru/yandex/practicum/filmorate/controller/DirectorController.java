@@ -8,36 +8,38 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.service.DirectorService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/directors")
-@Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/directors")
 public class DirectorController {
+    static final String PATH_TO_DIRECTOR_ID = "/{director-id}";
     private final DirectorService directorService;
 
-    @GetMapping
-    public List<Director> findAll() {
-        return directorService.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public Director findById(@PathVariable int id) {
-        return directorService.findById(id);
-    }
-
     @PostMapping
-    public Director create(@Valid @RequestBody Director director) {
+    public Director createDirector(@Valid @RequestBody Director director) {
         return directorService.create(director);
     }
 
     @PutMapping
-    public Director update(@Valid @RequestBody Director director) {
+    public Director updateDirector(@Valid @RequestBody Director director) {
         return directorService.update(director);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable int id) {
+    @GetMapping
+    public List<Director> getAllDirectors() {
+        return directorService.findAll();
+    }
+
+    @DeleteMapping(PATH_TO_DIRECTOR_ID)
+    public void deleteDirector(@PathVariable("director-id") int id) {
         directorService.deleteById(id);
     }
+
+    @GetMapping(PATH_TO_DIRECTOR_ID)
+    public Optional<Director> getDirectorById(@PathVariable("director-id") int id) {
+        return Optional.ofNullable(directorService.findById(id));
+    }
 }
+
