@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
-import com.sun.jdi.InternalException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -8,7 +7,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.sql.PreparedStatement;
@@ -63,23 +61,8 @@ public class DirectorDbStorage {
     }
 
     public Director update(Director director) {
-        Director updateDirector = this.findOne(FIND_BY_ID_SQL, director.getId())
-                .map(user -> changeVariable(user, director))
-                .orElseThrow(() -> new NotFoundException("Режиссер не найден"));
-        update(UPDATE_SQL,
-                updateDirector.getName(),
-                updateDirector.getId());
-        return updateDirector;
-    }
-
-    private Optional<Director> findOne(String query, Object... params) {
-        try {
-            Director director = jdbcTemplate.queryForObject(query, new Object[] {params},
-                    (rs, rowNum) -> mapRowToDirector(rs, rowNum));
-            return Optional.ofNullable(director);
-        } catch (EmptyResultDataAccessException ignored) {
-            return Optional.empty();
-        }
+        jdbcTemplate.update(UPDATE_SQL, director.getName(), director.getId());
+        return director;
     }
 
     private Director mapRowToDirector(ResultSet rs, int rowNum) throws SQLException {
@@ -88,18 +71,4 @@ public class DirectorDbStorage {
         director.setName(rs.getString("name"));
         return director;
     }
-
-    public static Director changeVariable(Director director, Director request) {
-        director.setName(request.getName());
-        director.setId(request.getId());
-        return director;
-    }
-
-    void update(String query, Object... params) {
-        int rowsUpdated = jdbcTemplate.update(query, params);
-        if (rowsUpdated == 0) {
-            throw new InternalException("Не удалось обновить данные");
-        }
-    }
-
 }
