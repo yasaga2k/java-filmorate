@@ -234,12 +234,23 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().id(),
                 film.getId());
 
-        jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
-        jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
-        saveGenres(film);
-        saveDirectors(film);
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            saveDirectors(film);
+        } else {
+            jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
+            film.setDirectors(new HashSet<>());
+        }
+
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            saveGenres(film);
+        } else {
+            jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
+            film.setGenres(new HashSet<>());
+        }
+
         return film;
     }
+
 
     @Override
     public void delete(int id) {
