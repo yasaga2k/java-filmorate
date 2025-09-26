@@ -78,6 +78,13 @@ public class FilmService {
             film.setDirectors(directors);
         }
 
+        // Проверка и удаление режиссёра при необходимости
+        if (!film.getDirectors().isEmpty() && existingFilm.getDirectors() != null && !existingFilm.getDirectors().isEmpty()) {
+            // логика удаления режиссёра из film или existingFilm
+
+            film.getDirectors().clear(); // Очистка списка режиссёров
+        }
+
         if (film.getGenres() == null) {
             film.setGenres(existingFilm.getGenres());
         } else if (!film.getGenres().isEmpty()) {
