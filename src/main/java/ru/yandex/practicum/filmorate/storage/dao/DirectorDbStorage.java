@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.sql.PreparedStatement;
@@ -61,23 +60,9 @@ public class DirectorDbStorage {
         jdbcTemplate.update(DELETE_SQL, id);
     }
 
-    public Director update(Director request) {
-        Director updateDirector;
-        try {
-            updateDirector = jdbcTemplate.queryForObject(FIND_BY_ID_SQL, new Object[]{request.getId()},
-                    (rs, rowNum) -> mapRowToDirector(rs, rowNum));
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("Режиссёр не найден");
-        }
-
-        jdbcTemplate.update(connection -> {
-            PreparedStatement stmt = connection.prepareStatement(UPDATE_SQL);
-            stmt.setString(1, updateDirector.getName());
-            stmt.setInt(2, updateDirector.getId());
-            return stmt;
-        });
-
-        return updateDirector;
+    public Director update(Director director) {
+        jdbcTemplate.update(UPDATE_SQL, director.getName(), director.getId());
+        return director;
     }
 
     private Director mapRowToDirector(ResultSet rs, int rowNum) throws SQLException {
@@ -86,5 +71,4 @@ public class DirectorDbStorage {
         director.setName(rs.getString("name"));
         return director;
     }
-
 }
