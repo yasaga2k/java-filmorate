@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private static final String FIND_ALL_SQL = "SELECT f.*, m.name as mpa_name FROM films f " +
-            "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id";
+                                               "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id";
     private static final String FIND_BY_ID_SQL = "SELECT f.*, m.name as mpa_name FROM films f " +
-            "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id WHERE f.id = ?";
+                                                 "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id WHERE f.id = ?";
     private static final String FIND_POPULAR_FILMS_SQL = """
                 SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
                 FROM films f
@@ -49,9 +49,9 @@ public class FilmDbStorage implements FilmStorage {
                 LIMIT ?
             """;
     private static final String GET_ALL_FILMS_ID_WITH_DIRECTOR = "SELECT f.id FROM films f " +
-            "LEFT JOIN directors_of_films df ON f.id = df.film_id " +
-            "WHERE  df.director_id = ?" +
-            ";";
+                                                                 "LEFT JOIN directors_of_films df ON f.id = df.film_id " +
+                                                                 "WHERE  df.director_id = ?" +
+                                                                 ";";
 
     private static final String FIND_POPULAR_FILMS_BY_YEAR_SQL = """
                 SELECT f.*, m.name as mpa_name, COUNT(l.user_id) as likes_count
@@ -76,9 +76,9 @@ public class FilmDbStorage implements FilmStorage {
                 LIMIT ?
             """;
     private static final String CREATE_SQL = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
-            "VALUES (?, ?, ?, ?, ?)";
+                                             "VALUES (?, ?, ?, ?, ?)";
     private static final String UPDATE_SQL = "UPDATE films SET name = ?, description = ?, " +
-            "release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
+                                             "release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
     private static final String DELETE_SQL = "DELETE FROM films WHERE id = ?";
     private static final String DELETE_GENRES_SQL = "DELETE FROM film_genres WHERE film_id = ?";
     private static final String DELETE_DIRECTOR_SQL = "DELETE FROM directors_of_films WHERE film_id = ?";
@@ -112,7 +112,7 @@ public class FilmDbStorage implements FilmStorage {
             \s""";
     private static final String LOAD_LIKES_FOR_FILM_SQL = "SELECT user_id FROM films_likes WHERE film_id = ?";
     private static final String LOAD_LIKES_FOR_FILMS_SQL = "SELECT film_id, user_id FROM films_likes " +
-            "WHERE film_id IN (";
+                                                           "WHERE film_id IN (";
     private static final String SEARCH_BY_TITLE_SQL = """
             SELECT DISTINCT f.*, m.name as mpa_name, COUNT(fl.user_id) as likes_count
             FROM films f
@@ -431,10 +431,10 @@ public class FilmDbStorage implements FilmStorage {
     //Поиск совместного фильма
     public List<Film> getCommon(int userId, int friendId) {
         String getFilmsUser = "SELECT DISTINCT f.*, m.name AS mpa_name " +
-                "FROM films_likes AS l " +
-                "INNER JOIN films AS f ON l.film_id = f.id " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id " +
-                "WHERE l.user_id=?";
+                              "FROM films_likes AS l " +
+                              "INNER JOIN films AS f ON l.film_id = f.id " +
+                              "LEFT JOIN mpa_ratings m ON f.mpa_id = m.id " +
+                              "WHERE l.user_id=?";
 
         List<Film> userFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, userId);
         List<Film> friendFilms = jdbcTemplate.query(getFilmsUser, this::mapRowToFilm, friendId);

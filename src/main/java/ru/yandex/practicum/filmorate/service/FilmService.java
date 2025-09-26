@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -99,20 +100,27 @@ public class FilmService {
         return updatedFilm;
     }
 
+    //
     public void addLike(int filmId, int userId) {
         findById(filmId); // Проверяем существование фильма
         userService.findById(userId); // Проверяем существование пользователя
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                userId,
-                "LIKE",
-                "ADD",
-                filmId));
-        filmsLikesDbStorage.addLike(filmId, userId);
-        log.info("Лайк добавлен. Фильм ID={}, Пользователь ID={}", filmId, userId);
+
+        try {
+            feedEventsDbStorage.save(new FeedEvents(
+                    1,
+                    System.currentTimeMillis(),
+                    userId,
+                    "LIKE",
+                    "ADD",
+                    filmId));
+            filmsLikesDbStorage.addLike(filmId, userId);
+            log.info("Лайк добавлен. Фильм ID={}, Пользователь ID={}", filmId, userId);
+        } catch (DataAccessException e) {
+            log.warn("Попытка добавления дублирующего лайка. Фильм ID={}, Пользователь ID={}", filmId, userId);
+        }
     }
 
+    //
     public void removeLike(int filmId, int userId) {
         findById(filmId);
         userService.findById(userId);
