@@ -234,40 +234,12 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().id(),
                 film.getId());
 
-        if (film.getDirectors() != null) {
-            if (!film.getDirectors().isEmpty()) {
-                updateDirectors(film.getDirectors(), film.getId());
-            } else {
-                clearDirectors(film.getId());
-                film.setDirectors(new HashSet<>());
-            }
-        } else {
-            clearDirectors(film.getId());
-            film.setDirectors(new HashSet<>());
-        }
-
-        // Логика для жанров остаётся без изменений
         jdbcTemplate.update(DELETE_GENRES_SQL, film.getId());
+        jdbcTemplate.update(DELETE_DIRECTOR_SQL, film.getId());
         saveGenres(film);
-
+        saveDirectors(film);
         return film;
     }
-
-    private void updateDirectors(Set<Director> directors, Integer idFilm) {
-        if (!directors.isEmpty()) {
-            clearDirectors(idFilm);
-            final String setFilmDirectors = "INSERT INTO film_directors (film_id, director_id) VALUES(?, ?)";
-            for (Director director : directors) {
-                jdbcTemplate.update(setFilmDirectors, idFilm, director.getId());
-            }
-        }
-    }
-
-    private void clearDirectors(Integer id) {
-        String deleteDirectorsForFilm = "DELETE FROM film_directors WHERE film_id=?";
-        jdbcTemplate.update(deleteDirectorsForFilm, id);
-    }
-
 
     @Override
     public void delete(int id) {
