@@ -6,19 +6,19 @@ import lombok.Data;
 @Data
 public class ReviewUpdateDto {
 
-    long reviewId;
+    private long reviewId;
 
     @NotNull
-    String content;
+    private String content;
 
     @NotNull
-    Integer filmId;
+    private Integer filmId;
 
     @NotNull
-    Integer userId;
+    private Integer userId;
 
     @NotNull
-    Boolean isPositive;
+    private Boolean isPositive;
 
-    int useful;
+    private int useful;
 }

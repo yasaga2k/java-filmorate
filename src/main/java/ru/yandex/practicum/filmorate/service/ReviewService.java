@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.controller.dto.ReviewCreateDto;
+import ru.yandex.practicum.filmorate.controller.dto.ReviewGetDto;
+import ru.yandex.practicum.filmorate.controller.dto.ReviewUpdateDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.FeedEvents;
 import ru.yandex.practicum.filmorate.model.Review;
@@ -12,42 +15,34 @@ import ru.yandex.practicum.filmorate.storage.dao.FeedEventsDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.ReviewDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
+import ru.yandex.practicum.filmorate.mappers.ReviewRowMapper;
 
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE,
-        makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReviewService {
     ReviewDbStorage reviewStorage;
     FilmDbStorage filmDbStorage;
     UserDbStorage userDbStorage;
     FeedEventsDbStorage feedEventsDbStorage;
+    ReviewRowMapper reviewRowMapper;
 
-    public Review getReviewById(int id) {
-        return reviewStorage.findById(id).orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден."));
-    }
+    public ReviewGetDto createReview(ReviewCreateDto reviewCreateDto) {
+        validateReview(reviewCreateDto.getFilmId(), reviewCreateDto.getUserId());
 
-    public Review updateReview(Review review) {
-        validateReview(review.getFilmId(), review.getUserId());
-        Review reviewUpdated = reviewStorage.updateReview(review);
-        feedEventsDbStorage.save(new FeedEvents(
-                1,
-                System.currentTimeMillis(),
-                reviewUpdated.getUserId(),
-                "REVIEW",
-                "UPDATE",
-                reviewUpdated.getReviewId().intValue()));
-        return reviewUpdated;
-    }
+        Review review = Review.builder()
+                .content(reviewCreateDto.getContent())
+                .isPositive(reviewCreateDto.getIsPositive())
+                .filmId(reviewCreateDto.getFilmId())
+                .userId(reviewCreateDto.getUserId())
+                .useful(reviewCreateDto.getUseful())
+                .build();
 
-    public Review createReview(Review review) {
-        validateReview(review.getFilmId(), review.getUserId());
-
-        Review savedReview = reviewStorage.createReview(review); // now it has an ID
+        Review savedReview = reviewStorage.createReview(review);
 
         FeedEvents feedEvents = new FeedEvents(
                 1,
@@ -56,15 +51,52 @@ public class ReviewService {
                 "REVIEW",
                 "ADD",
                 savedReview.getReviewId().intValue());
-
         feedEventsDbStorage.save(feedEvents);
 
-        return savedReview;
+        return reviewRowMapper.toReviewGetDto(savedReview);
     }
 
+    public ReviewGetDto updateReview(ReviewUpdateDto reviewUpdateDto) {
+        validateReview(reviewUpdateDto.getFilmId(), reviewUpdateDto.getUserId());
+
+        Review review = Review.builder()
+                .reviewId(reviewUpdateDto.getReviewId())
+                .content(reviewUpdateDto.getContent())
+                .isPositive(reviewUpdateDto.getIsPositive())
+                .filmId(reviewUpdateDto.getFilmId())
+                .userId(reviewUpdateDto.getUserId())
+                .useful(reviewUpdateDto.getUseful())
+                .build();
+
+        Review reviewUpdated = reviewStorage.updateReview(review);
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                reviewUpdated.getUserId(),
+                "REVIEW",
+                "UPDATE",
+                reviewUpdated.getReviewId().intValue()));
+
+        return reviewRowMapper.toReviewGetDto(reviewUpdated);
+    }
+
+    public ReviewGetDto getReviewById(int id) {
+        Review review = reviewStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден."));
+        return reviewRowMapper.toReviewGetDto(review);
+    }
+
+    public List<ReviewGetDto> getReviewByFilmId(int filmId, int count) {
+        List<Review> reviews = reviewStorage.findReviewsByFilm(filmId, count);
+        return reviews.stream()
+                .map(reviewRowMapper::toReviewGetDto)
+                .collect(Collectors.toList());
+    }
 
     public void deleteReview(int id) {
-        Review review = getReviewById(id); // получаем, чтобы узнать userId
+        Review review = reviewStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден."));
+
         feedEventsDbStorage.save(new FeedEvents(
                 1,
                 System.currentTimeMillis(),
@@ -73,10 +105,6 @@ public class ReviewService {
                 "REMOVE",
                 review.getReviewId().intValue()));
         reviewStorage.deleteReview(id);
-    }
-
-    public List<Review> getReviewByFilmId(int filmId, int count) {
-        return reviewStorage.findReviewsByFilm(filmId, count);
     }
 
     public void likeReview(int reviewId, int userId, boolean isPositive) {

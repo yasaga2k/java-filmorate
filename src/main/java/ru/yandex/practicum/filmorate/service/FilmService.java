@@ -33,6 +33,9 @@ public class FilmService {
     private final DirectorService directorService;
     private final FeedEventsDbStorage feedEventsDbStorage;
 
+    private static final String SORT_BY_YEAR = "year";
+    private static final String SORT_BY_LIKES = "likes";
+
     public List<Film> findAll() {
         return filmStorage.findAll();
     }
@@ -153,22 +156,22 @@ public class FilmService {
 
     public List<Film> getFilmsByDirector(int id, String sortBy) {
         directorService.findById(id);
-
         List<Film> films = filmStorage.getAllFilmsFromDirector(id);
 
-        if (sortBy.equals("year")) {
-            return films.stream()
-                    .sorted(Comparator.comparing(Film::getReleaseDate))
-                    .collect(Collectors.toList());
-        } else if (sortBy.equals("likes")) {
-            return films.stream()
-                    .sorted(Comparator
-                            .comparingInt((Film f) -> f.getLikes().size()).reversed()
-                            .thenComparingInt(Film::getId))
-                    .collect(Collectors.toList());
+        switch (sortBy) {
+            case SORT_BY_YEAR:
+                return films.stream()
+                        .sorted(Comparator.comparing(Film::getReleaseDate))
+                        .collect(Collectors.toList());
+            case SORT_BY_LIKES:
+                return films.stream()
+                        .sorted(Comparator
+                                .comparingInt((Film f) -> f.getLikes().size()).reversed()
+                                .thenComparingInt(Film::getId))
+                        .collect(Collectors.toList());
+            default:
+                throw new IllegalArgumentException("неправильный параметр sortBy: " + sortBy);
         }
-
-        throw new IllegalArgumentException("неправильный параметр sortBy " + sortBy);
     }
 
     public void delete(int id) {

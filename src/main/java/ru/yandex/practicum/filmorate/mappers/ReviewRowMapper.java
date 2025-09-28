@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.mappers;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.controller.dto.ReviewGetDto;
 import ru.yandex.practicum.filmorate.model.Review;
 
 import java.sql.ResultSet;
@@ -20,5 +21,16 @@ public class ReviewRowMapper implements RowMapper<Review> {
         review.setUseful(rs.getInt("useful"));
 
         return review;
+    }
+
+    public ReviewGetDto toReviewGetDto(Review review) {
+        return ReviewGetDto.builder()
+                .reviewId(review.getReviewId())
+                .content(review.getContent())
+                .filmId(review.getFilmId())
+                .userId(review.getUserId())
+                .isPositive(review.isPositive())
+                .useful(review.getUseful())
+                .build();
     }
 }

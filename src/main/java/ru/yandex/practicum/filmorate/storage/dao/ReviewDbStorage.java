@@ -14,19 +14,28 @@ import java.util.Optional;
 
 @Repository
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE,
-        makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReviewDbStorage extends BaseRepository<Review> {
 
     static String SELECT_REVIEWS = "SELECT * FROM film_reviews ";
+    static String CREATE_REVIEW_SQL = "INSERT INTO film_reviews (film_id, user_id, content, is_positive, useful) VALUES (?, ?, ?, ?, ?)";
+    static String UPDATE_REVIEW_SQL = "UPDATE film_reviews SET content = ?, is_positive = ? WHERE id = ?";
+    static String DELETE_REVIEW_SQL = "DELETE FROM film_reviews WHERE id = ?";
+    static String FIND_REVIEWS_BY_FILM_SQL = "SELECT * FROM film_reviews WHERE film_id = ? ORDER BY useful DESC LIMIT ?";
+    static String FIND_ALL_REVIEWS_SQL = "SELECT * FROM film_reviews ORDER BY useful DESC LIMIT ?";
+    static String FIND_REVIEW_BY_ID_SQL = "SELECT * FROM film_reviews WHERE id = ?";
+    static String CHECK_LIKE_EXISTS_SQL = "SELECT COUNT(*) AS count FROM reviews_likes WHERE review_id = ? AND user_id = ?";
+    static String UPDATE_LIKE_SQL = "UPDATE reviews_likes SET is_positive = ? WHERE review_id = ? AND user_id = ?";
+    static String INSERT_LIKE_SQL = "INSERT INTO reviews_likes (review_id, user_id, is_positive) VALUES (?, ?, ?)";
+    static String DELETE_LIKE_SQL = "DELETE FROM reviews_likes WHERE review_id = ? AND user_id = ? AND is_positive = ?";
+    static String UPDATE_USEFUL_SQL = "UPDATE film_reviews SET useful = useful + ? WHERE id = ?";
 
     public ReviewDbStorage(JdbcTemplate jdbc, RowMapper<Review> mapper) {
         super(jdbc, mapper);
     }
 
     public Review createReview(Review review) {
-        String sql = "INSERT INTO film_reviews (film_id, USER_ID, CONTENT, IS_POSITIVE, USEFUL) VALUES (?, ?, ?, ?, ?)";
-        long id = insert(sql,
+        long id = insert(CREATE_REVIEW_SQL,
                 review.getFilmId(), review.getUserId(), review.getContent(), review.isPositive(), review.getUseful());
         review.setReviewId(id);
         return review;
@@ -34,10 +43,7 @@ public class ReviewDbStorage extends BaseRepository<Review> {
 
     public Review updateReview(Review review) {
         long id = review.getReviewId();
-        String sql =
-                "UPDATE FILM_REVIEWS SET CONTENT = ?, IS_POSITIVE = ?" +
-                        "WHERE ID = ?";
-        if (jdbc.update(sql,
+        if (jdbc.update(UPDATE_REVIEW_SQL,
                 review.getContent(),
                 review.isPositive(),
                 id) < 1) {
@@ -47,22 +53,14 @@ public class ReviewDbStorage extends BaseRepository<Review> {
     }
 
     public void deleteReview(int id) {
-        String sql = "DELETE FROM film_reviews WHERE ID = ?";
-        jdbc.update(sql, id);
+        jdbc.update(DELETE_REVIEW_SQL, id);
     }
 
     public List<Review> findReviewsByFilm(int filmId, int count) {
         if (filmId != -1) {
-            String sql =
-                    "SELECT * FROM film_reviews " +
-                            "WHERE FILM_ID = ? " +
-                            "ORDER BY USEFUL DESC LIMIT ?";
-            return jdbc.query(sql, mapper, filmId, count);
+            return jdbc.query(FIND_REVIEWS_BY_FILM_SQL, mapper, filmId, count);
         }
-        String sql = "SELECT * FROM film_reviews ORDER BY USEFUL DESC LIMIT ?";
-        return jdbc.query(sql, mapper, count);
-
-
+        return jdbc.query(FIND_ALL_REVIEWS_SQL, mapper, count);
     }
 
     public Optional<Review> findById(long id) {
@@ -71,9 +69,8 @@ public class ReviewDbStorage extends BaseRepository<Review> {
     }
 
     public boolean likeExistsById(int reviewId, int userId) {
-        String sql = "SELECT COUNT(*) AS count FROM reviews_likes WHERE review_id = ? AND user_id = ?";
-        Integer count = jdbc.queryForObject(sql, Integer.class, reviewId, userId);
-        return count > 0;
+        Integer count = jdbc.queryForObject(CHECK_LIKE_EXISTS_SQL, Integer.class, reviewId, userId);
+        return count != null && count > 0;
     }
 
     public void addLike(int reviewId, int userId, boolean positive) {
@@ -81,11 +78,11 @@ public class ReviewDbStorage extends BaseRepository<Review> {
         int amount;
 
         if (likeExistsById(reviewId, userId)) {
-            sql = "UPDATE reviews_likes SET is_positive = ? WHERE review_id = ? AND user_id = ?";
+            sql = UPDATE_LIKE_SQL;
             amount = positive ? 2 : -2;
             update(sql, positive, reviewId, userId);
         } else {
-            sql = "INSERT INTO reviews_likes (review_id, user_id, is_positive) VALUES (?, ?, ?)";
+            sql = INSERT_LIKE_SQL;
             amount = positive ? 1 : -1;
             update(sql, reviewId, userId, positive);
         }
@@ -95,16 +92,13 @@ public class ReviewDbStorage extends BaseRepository<Review> {
 
     public void removeLike(int reviewId, int userId, boolean positive) {
         if (likeExistsById(reviewId, userId)) {
-            String sql = "DELETE FROM reviews_likes WHERE review_id = ? AND user_id = ? AND is_positive = ?";
-            jdbc.update(sql, reviewId, userId, positive);
+            jdbc.update(DELETE_LIKE_SQL, reviewId, userId, positive);
             int amount = positive ? -1 : 1;
             updateUseful(reviewId, amount);
         }
-
     }
 
     private void updateUseful(int reviewId, int amount) {
-        String sql = "UPDATE film_reviews SET USEFUL = USEFUL + ? WHERE ID = ?";
-        jdbc.update(sql, amount, reviewId);
+        jdbc.update(UPDATE_USEFUL_SQL, amount, reviewId);
     }
 }

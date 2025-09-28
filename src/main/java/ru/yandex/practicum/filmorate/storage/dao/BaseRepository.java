@@ -14,10 +14,10 @@ import java.util.Optional;
 
 @RequiredArgsConstructor
 public class BaseRepository<T> {
-    final JdbcTemplate jdbc;
-    final RowMapper<T> mapper;
+    protected final JdbcTemplate jdbc;
+    protected final RowMapper<T> mapper;
 
-    void update(String query, Object... params) {
+    protected void update(String query, Object... params) {
         int rowsUpdated = jdbc.update(query, params);
         if (rowsUpdated == 0) {
             throw new InternalException("Не удалось обновить данные");
@@ -28,7 +28,7 @@ public class BaseRepository<T> {
         return jdbc.query(query, mapper, params);
     }
 
-    Optional<T> findOne(String query, Object... params) {
+    protected Optional<T> findOne(String query, Object... params) {
         try {
             T result = jdbc.queryForObject(query, mapper, params);
             return Optional.ofNullable(result);
@@ -37,7 +37,7 @@ public class BaseRepository<T> {
         }
     }
 
-    Long insert(String query, Object... params) {
+    protected Long insert(String query, Object... params) {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
             PreparedStatement ps = connection
