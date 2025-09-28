@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.customannotation.ReleaseDate;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
@@ -28,6 +29,8 @@ public class Film {
     @NotNull(message = "продолжительность фильма должна быть указана")
     @Positive(message = "продолжительность фильма должна быть положительным числом")
     private int duration;
+
+    private Set<Director> directors = new LinkedHashSet<>();
 
     private Set<Integer> likes = new HashSet<>();
     private Set<Genre> genres = new HashSet<>();

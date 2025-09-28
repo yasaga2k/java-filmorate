@@ -5,13 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.FeedEvents;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FeedEventsDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmsLikesDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
-import ru.yandex.practicum.filmorate.model.Friendship;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +28,11 @@ public class UserService {
     private final UserStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
     private final FriendshipStorage friendshipStorage;
+    private final FilmsLikesDbStorage filmsLikesDbStorage;
+    private final FeedEventsDbStorage feedEventsDbStorage;
+
+    @Qualifier("filmDbStorage")
+    private final FilmStorage filmStorage;
 
     public List<User> findAll() {
         log.info("GET /users - Получение всех пользователей");
@@ -59,18 +69,32 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         User user = findById(userId);
         User friend = findById(friendId);
-
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                user.getId(),
+                "FRIEND",
+                "ADD",
+                friend.getId()));
         // Односторонняя дружба - только пользователь добавляет друга
         friendshipDbStorage.add(new Friendship(userId, friendId, true));
         log.info("Пользователь {} добавил пользователя {} в друзья", userId, friendId);
+
     }
 
     public void removeFriend(int userId, int friendId) {
         findById(userId);
         findById(friendId);
-
+        feedEventsDbStorage.save(new FeedEvents(
+                1,
+                System.currentTimeMillis(),
+                userId,
+                "FRIEND",
+                "REMOVE",
+                friendId));
         friendshipDbStorage.delete(new ru.yandex.practicum.filmorate.model.Friendship(userId, friendId, false));
         log.info("Пользователь {} удалил пользователя {} из друзей", userId, friendId);
+
     }
 
     public List<User> getFriends(int userId) {
@@ -88,5 +112,90 @@ public class UserService {
         return friendshipDbStorage.findCommonFriends(userId, otherId).stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        findById(userId); // Проверяем существование пользователя
+
+        // Загружаем все лайки
+        List<Map<String, Integer>> allLikes = filmsLikesDbStorage.getAllLikes();
+
+        // Группируем лайки по пользователям
+        Map<Integer, Set<Integer>> userLikesMap = new HashMap<>();
+        for (Map<String, Integer> like : allLikes) {
+            Integer likeUserId = like.get("userId");
+            Integer filmId = like.get("filmId");
+            userLikesMap.computeIfAbsent(likeUserId, k -> new HashSet<>()).add(filmId);
+        }
+
+        // Получаем фильмы, которые лайкнул целевой пользователь
+        Set<Integer> userLikes = userLikesMap.getOrDefault(userId, Set.of());
+
+        // Если пользователь ничего не лайкал, возвращаем пустой список
+        if (userLikes.isEmpty()) {
+            log.info("Пользователь {} не лайкал фильмы, рекомендации невозможны", userId);
+            return List.of();
+        }
+
+        // Находим пользователя с максимальным количеством пересечений по лайкам
+        Map<Integer, Integer> userSimilarity = new HashMap<>();
+
+        for (Map.Entry<Integer, Set<Integer>> entry : userLikesMap.entrySet()) {
+            Integer otherUserId = entry.getKey();
+            if (!otherUserId.equals(userId)) {
+                Set<Integer> otherUserLikes = entry.getValue();
+
+                // Подсчитываем количество общих лайков
+                Set<Integer> intersection = new HashSet<>(userLikes);
+                intersection.retainAll(otherUserLikes);
+
+                if (!intersection.isEmpty()) {
+                    userSimilarity.put(otherUserId, intersection.size());
+                }
+            }
+        }
+
+        // Если не найдено похожих пользователей, возвращаем пустой список
+        if (userSimilarity.isEmpty()) {
+            log.info("Не найдены пользователи с похожими вкусами для пользователя {}", userId);
+            return List.of();
+        }
+
+        // Находим пользователя с максимальным количеством пересечений
+        Integer mostSimilarUserId = userSimilarity.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+
+        if (mostSimilarUserId == null) {
+            log.info("Не удалось найти наиболее похожего пользователя для пользователя {}", userId);
+            return List.of();
+        }
+
+        // Получаем фильмы, которые лайкнул похожий пользователь, но не лайкнул целевой
+        Set<Integer> similarUserLikes = userLikesMap.getOrDefault(mostSimilarUserId, Set.of());
+        Set<Integer> recommendations = new HashSet<>(similarUserLikes);
+        recommendations.removeAll(userLikes);
+
+        log.info("Найден похожий пользователь {} с {} общими лайками. Рекомендовано {} фильмов для пользователя {}",
+                mostSimilarUserId, userSimilarity.get(mostSimilarUserId), recommendations.size(), userId);
+
+        // Возвращаем рекомендованные фильмы
+        return recommendations.stream()
+                .map(filmId -> filmStorage.findById(filmId))
+                .filter(filmOpt -> filmOpt.isPresent())
+                .map(filmOpt -> filmOpt.get())
+                .collect(Collectors.toList());
+    }
+
+    public void delete(int id) {
+        findById(id);
+        userStorage.delete(id);
+        log.info("Пользователь с ID={} удален", id);
+    }
+
+    public List<FeedEvents> getFeedEvents(int id) {
+        User user = findById(id);
+        return feedEventsDbStorage.findByUserId(id);
     }
 }
